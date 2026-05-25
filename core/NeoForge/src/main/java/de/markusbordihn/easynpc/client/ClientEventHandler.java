@@ -19,11 +19,15 @@
 
 package de.markusbordihn.easynpc.client;
 
+import de.markusbordihn.easynpc.client.ai.AISpeechBubbleRenderer;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
+import org.joml.Quaternionf;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
+import net.neoforged.neoforge.client.event.RenderLevelStageEvent;
 
 @EventBusSubscriber(value = Dist.CLIENT)
 public class ClientEventHandler {
@@ -31,5 +35,15 @@ public class ClientEventHandler {
   @SubscribeEvent
   public static void onClientSetup(FMLClientSetupEvent event) {
     event.enqueueWork(() -> ClientEvents.handleClientStartedEvent(Minecraft.getInstance()));
+  }
+
+  @SubscribeEvent
+  public static void onRenderLevel(RenderLevelStageEvent.AfterEntities event) {
+    Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+    if (camera == null) {
+      return;
+    }
+    AISpeechBubbleRenderer.renderAll(
+        event.getPoseStack(), camera.position(), new Quaternionf(camera.rotation()));
   }
 }

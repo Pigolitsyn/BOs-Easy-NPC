@@ -25,6 +25,7 @@ public enum DialogType {
   BASIC,
   YES_NO,
   CUSTOM,
+  AI,
   NONE;
 
   // @formatter:on

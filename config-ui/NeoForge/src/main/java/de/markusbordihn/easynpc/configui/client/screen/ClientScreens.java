@@ -28,6 +28,7 @@ import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.B
 import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.CombatAttributeConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.attribute.DisplayAttributeConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.AdvancedDialogConfigurationScreenWrapper;
+import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.AIDialogConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.BasicDialogConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.NoneDialogConfigurationScreenWrapper;
 import de.markusbordihn.easynpc.configui.client.screen.configuration.dialog.YesNoDialogConfigurationScreenWrapper;
@@ -227,5 +228,8 @@ public class ClientScreens {
     event.register(
         ModMenuTypes.YES_NO_DIALOG_CONFIGURATION_MENU.get(),
         YesNoDialogConfigurationScreenWrapper::new);
+    event.register(
+        ModMenuTypes.AI_DIALOG_CONFIGURATION_MENU.get(),
+        AIDialogConfigurationScreenWrapper::new);
   }
 }

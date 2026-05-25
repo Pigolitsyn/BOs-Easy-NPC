@@ -23,6 +23,7 @@ import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.backup.BackupManager;
 import de.markusbordihn.easynpc.entity.NPCEntityManager;
 import de.markusbordihn.easynpc.io.DataFileHandler;
+import de.markusbordihn.easynpc.server.ai.AISpeechBubbleScheduler;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.level.storage.LevelResource;
 import org.apache.logging.log4j.LogManager;
@@ -66,6 +67,9 @@ public class ServerEvents {
 
     // Perform backup each hour.
     BackupManager.performBackup();
+
+    // Scan AI-speech-bubble enabled NPCs and fire stateless prompts.
+    AISpeechBubbleScheduler.tick(minecraftServer);
   }
 
   public static void handleServerStopping(MinecraftServer minecraftServer) {

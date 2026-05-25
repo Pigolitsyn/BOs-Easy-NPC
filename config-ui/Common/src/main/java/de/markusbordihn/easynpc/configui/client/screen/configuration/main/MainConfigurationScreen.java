@@ -76,6 +76,7 @@ public class MainConfigurationScreen<T extends ConfigurationMenu> extends Config
 
   static {
     menuButtons.put("actions", ConfigurationType.BASIC_ACTION);
+    menuButtons.put("ai", ConfigurationType.AI_DIALOG);
     menuButtons.put("attributes", ConfigurationType.ABILITIES_ATTRIBUTE);
     menuButtons.put("dialog", ConfigurationType.DIALOG);
     menuButtons.put("equipment", ConfigurationType.EQUIPMENT);

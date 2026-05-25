@@ -31,6 +31,7 @@ import de.markusbordihn.easynpc.configui.menu.configuration.attribute.DisplayAtt
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.AdvancedDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.BasicDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.NoneDialogConfigurationMenuWrapper;
+import de.markusbordihn.easynpc.configui.menu.configuration.dialog.AIDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.YesNoDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.equipment.EquipmentConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.main.MainConfigurationMenuWrapper;
@@ -361,4 +362,9 @@ public class ModMenuTypes {
           MENU_TYPES.register(
               ConfigurationType.YES_NO_DIALOG.getName(),
               () -> IMenuTypeExtension.create(YesNoDialogConfigurationMenuWrapper::new));
+  public static final DeferredHolder<MenuType<?>, MenuType<AIDialogConfigurationMenuWrapper>>
+      AI_DIALOG_CONFIGURATION_MENU =
+          MENU_TYPES.register(
+              ConfigurationType.AI_DIALOG.getName(),
+              () -> IMenuTypeExtension.create(AIDialogConfigurationMenuWrapper::new));
 }

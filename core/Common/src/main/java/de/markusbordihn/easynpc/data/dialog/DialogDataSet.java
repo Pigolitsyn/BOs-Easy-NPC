@@ -58,10 +58,44 @@ public class DialogDataSet {
                   dialogDataSet.createTag(), "DialogDataSet"));
         }
       };
+  public static final String DATA_AI_SERVER_URL_TAG = "AIServerUrl";
+  public static final String DATA_AI_MODEL_NAME_TAG = "AIModelName";
+  public static final String DATA_AI_SYSTEM_PROMPT_TAG = "AISystemPrompt";
+  public static final String DATA_AI_API_KEY_TAG = "AIApiKey";
+  public static final String DATA_AI_MAX_HISTORY_TAG = "AIMaxHistory";
+  public static final String DATA_AI_SPEECH_BUBBLE_TAG = "AISpeechBubble";
+  public static final String DATA_AI_SPEECH_BUBBLE_RADIUS_TAG = "AISpeechBubbleRadius";
+  public static final String DATA_AI_SPEECH_BUBBLE_INTERVAL_TAG = "AISpeechBubbleInterval";
+  public static final String DATA_AI_PERSONA_NAME_TAG = "AIPersonaName";
+  public static final String DATA_AI_PERSONA_RACE_TAG = "AIPersonaRace";
+  public static final String DATA_AI_PERSONA_CLASS_TAG = "AIPersonaClass";
+  public static final String DATA_AI_PERSONA_ALIGNMENT_TAG = "AIPersonaAlignment";
+  public static final String DATA_AI_PERSONA_PERSONALITY_TAG = "AIPersonaPersonality";
+  public static final String DATA_AI_PERSONA_QUIRKS_TAG = "AIPersonaQuirks";
+  public static final String DATA_AI_PERSONA_BACKSTORY_TAG = "AIPersonaBackstory";
+  public static final String DATA_AI_PERSONA_GOALS_TAG = "AIPersonaGoals";
+  public static final String DATA_AI_PERSONA_SPEECH_STYLE_TAG = "AIPersonaSpeechStyle";
   private static final Logger log = LogManager.getLogger(Constants.LOG_NAME);
   private final HashMap<String, DialogDataEntry> dialogByLabelMap = new HashMap<>();
   private final HashMap<UUID, DialogDataEntry> dialogByIdMap = new HashMap<>();
   private DialogType dialogType = DialogType.STANDARD;
+  private String aiServerUrl = "";
+  private String aiModelName = "";
+  private String aiSystemPrompt = "";
+  private String aiApiKey = "";
+  private int aiMaxHistorySize = 20;
+  private boolean aiSpeechBubbleEnabled = false;
+  private int aiSpeechBubbleRadius = 8;
+  private int aiSpeechBubbleIntervalTicks = 1200;
+  private String aiPersonaName = "";
+  private String aiPersonaRace = "";
+  private String aiPersonaClass = "";
+  private String aiPersonaAlignment = "";
+  private String aiPersonaPersonality = "";
+  private String aiPersonaQuirks = "";
+  private String aiPersonaBackstory = "";
+  private String aiPersonaGoals = "";
+  private String aiPersonaSpeechStyle = "";
 
   public DialogDataSet() {}
 
@@ -192,6 +226,37 @@ public class DialogDataSet {
     return null;
   }
 
+  public List<DialogDataEntry> getChildren(UUID parentId) {
+    return this.dialogByIdMap.values().stream()
+        .filter(d -> parentId.equals(d.getParentDialogId()))
+        .sorted(Comparator.comparing(DialogDataEntry::getLabel))
+        .toList();
+  }
+
+  public List<DialogDataEntry> getRootDialogs() {
+    return this.dialogByIdMap.values().stream()
+        .filter(DialogDataEntry::isRoot)
+        .sorted(Comparator.comparing(DialogDataEntry::getLabel))
+        .toList();
+  }
+
+  public int getTreeDepth(UUID dialogId) {
+    int depth = 0;
+    UUID current = dialogId;
+    while (current != null) {
+      DialogDataEntry entry = this.dialogByIdMap.get(current);
+      if (entry == null || entry.getParentDialogId() == null) {
+        break;
+      }
+      current = entry.getParentDialogId();
+      depth++;
+      if (depth > 64) {
+        break;
+      }
+    }
+    return depth;
+  }
+
   public DialogDataEntry getNextAvailableDialog(ServerPlayer serverPlayer) {
     return dialogByIdMap.values().stream()
         .filter(dialog -> dialog.getPriority() >= DialogPriority.FALLBACK)
@@ -316,6 +381,210 @@ public class DialogDataSet {
     return this.dialogType;
   }
 
+  public String getAIServerUrl() {
+    return this.aiServerUrl;
+  }
+
+  public void setAIServerUrl(String aiServerUrl) {
+    this.aiServerUrl = aiServerUrl != null ? aiServerUrl : "";
+  }
+
+  public String getAIModelName() {
+    return this.aiModelName;
+  }
+
+  public void setAIModelName(String aiModelName) {
+    this.aiModelName = aiModelName != null ? aiModelName : "";
+  }
+
+  public String getAISystemPrompt() {
+    return this.aiSystemPrompt;
+  }
+
+  public void setAISystemPrompt(String aiSystemPrompt) {
+    this.aiSystemPrompt = aiSystemPrompt != null ? aiSystemPrompt : "";
+  }
+
+  public String getAIApiKey() {
+    return this.aiApiKey;
+  }
+
+  public void setAIApiKey(String aiApiKey) {
+    this.aiApiKey = aiApiKey != null ? aiApiKey : "";
+  }
+
+  public int getAIMaxHistorySize() {
+    return this.aiMaxHistorySize;
+  }
+
+  public void setAIMaxHistorySize(int aiMaxHistorySize) {
+    this.aiMaxHistorySize = Math.max(1, Math.min(100, aiMaxHistorySize));
+  }
+
+  public boolean isAISpeechBubbleEnabled() {
+    return this.aiSpeechBubbleEnabled;
+  }
+
+  public void setAISpeechBubbleEnabled(boolean aiSpeechBubbleEnabled) {
+    this.aiSpeechBubbleEnabled = aiSpeechBubbleEnabled;
+  }
+
+  public int getAISpeechBubbleRadius() {
+    return this.aiSpeechBubbleRadius;
+  }
+
+  public void setAISpeechBubbleRadius(int aiSpeechBubbleRadius) {
+    this.aiSpeechBubbleRadius = Math.max(1, Math.min(64, aiSpeechBubbleRadius));
+  }
+
+  public int getAISpeechBubbleIntervalTicks() {
+    return this.aiSpeechBubbleIntervalTicks;
+  }
+
+  public void setAISpeechBubbleIntervalTicks(int aiSpeechBubbleIntervalTicks) {
+    this.aiSpeechBubbleIntervalTicks = Math.max(20, aiSpeechBubbleIntervalTicks);
+  }
+
+  public boolean hasAIConfig() {
+    return this.dialogType == DialogType.AI && !this.aiServerUrl.isEmpty();
+  }
+
+  public String getAIPersonaName() {
+    return this.aiPersonaName;
+  }
+
+  public void setAIPersonaName(String v) {
+    this.aiPersonaName = v != null ? v : "";
+  }
+
+  public String getAIPersonaRace() {
+    return this.aiPersonaRace;
+  }
+
+  public void setAIPersonaRace(String v) {
+    this.aiPersonaRace = v != null ? v : "";
+  }
+
+  public String getAIPersonaClass() {
+    return this.aiPersonaClass;
+  }
+
+  public void setAIPersonaClass(String v) {
+    this.aiPersonaClass = v != null ? v : "";
+  }
+
+  public String getAIPersonaAlignment() {
+    return this.aiPersonaAlignment;
+  }
+
+  public void setAIPersonaAlignment(String v) {
+    this.aiPersonaAlignment = v != null ? v : "";
+  }
+
+  public String getAIPersonaPersonality() {
+    return this.aiPersonaPersonality;
+  }
+
+  public void setAIPersonaPersonality(String v) {
+    this.aiPersonaPersonality = v != null ? v : "";
+  }
+
+  public String getAIPersonaQuirks() {
+    return this.aiPersonaQuirks;
+  }
+
+  public void setAIPersonaQuirks(String v) {
+    this.aiPersonaQuirks = v != null ? v : "";
+  }
+
+  public String getAIPersonaBackstory() {
+    return this.aiPersonaBackstory;
+  }
+
+  public void setAIPersonaBackstory(String v) {
+    this.aiPersonaBackstory = v != null ? v : "";
+  }
+
+  public String getAIPersonaGoals() {
+    return this.aiPersonaGoals;
+  }
+
+  public void setAIPersonaGoals(String v) {
+    this.aiPersonaGoals = v != null ? v : "";
+  }
+
+  public String getAIPersonaSpeechStyle() {
+    return this.aiPersonaSpeechStyle;
+  }
+
+  public void setAIPersonaSpeechStyle(String v) {
+    this.aiPersonaSpeechStyle = v != null ? v : "";
+  }
+
+  public boolean hasPersona() {
+    return !aiPersonaName.isEmpty()
+        || !aiPersonaRace.isEmpty()
+        || !aiPersonaClass.isEmpty()
+        || !aiPersonaAlignment.isEmpty()
+        || !aiPersonaPersonality.isEmpty()
+        || !aiPersonaQuirks.isEmpty()
+        || !aiPersonaBackstory.isEmpty()
+        || !aiPersonaGoals.isEmpty()
+        || !aiPersonaSpeechStyle.isEmpty();
+  }
+
+  /**
+   * Builds an effective system prompt by composing persona fields. If no persona is set, returns
+   * the raw {@code aiSystemPrompt}. Otherwise appends the user-provided prompt at the end as
+   * additional instructions.
+   */
+  public String compileEffectiveSystemPrompt() {
+    if (!hasPersona()) {
+      return aiSystemPrompt;
+    }
+    StringBuilder sb = new StringBuilder();
+    String identity = compactIdentity();
+    if (!identity.isEmpty()) {
+      sb.append("You are ").append(identity).append(".\n");
+    }
+    appendIf(sb, "Personality", aiPersonaPersonality);
+    appendIf(sb, "Quirks (ideals, bonds, flaws)", aiPersonaQuirks);
+    appendIf(sb, "Backstory", aiPersonaBackstory);
+    appendIf(sb, "Goals", aiPersonaGoals);
+    appendIf(sb, "Speech style", aiPersonaSpeechStyle);
+    sb.append("Stay strictly in character. Keep replies short unless asked.\n");
+    if (aiSystemPrompt != null && !aiSystemPrompt.isBlank()) {
+      sb.append("\nAdditional instructions:\n").append(aiSystemPrompt);
+    }
+    return sb.toString();
+  }
+
+  private String compactIdentity() {
+    StringBuilder sb = new StringBuilder();
+    if (!aiPersonaName.isEmpty()) {
+      sb.append(aiPersonaName);
+    }
+    boolean hasRace = !aiPersonaRace.isEmpty();
+    boolean hasClass = !aiPersonaClass.isEmpty();
+    boolean hasAlign = !aiPersonaAlignment.isEmpty();
+    if (hasRace || hasClass || hasAlign) {
+      if (sb.length() > 0) sb.append(", ");
+      if (hasAlign) sb.append(aiPersonaAlignment).append(' ');
+      if (hasRace) sb.append(aiPersonaRace);
+      if (hasClass) {
+        if (hasRace) sb.append(' ');
+        sb.append(aiPersonaClass);
+      }
+    }
+    return sb.toString().trim();
+  }
+
+  private static void appendIf(StringBuilder sb, String label, String value) {
+    if (value != null && !value.isBlank()) {
+      sb.append(label).append(": ").append(value.trim()).append('\n');
+    }
+  }
+
   public void load(CompoundTag compoundTag) {
     if (compoundTag == null || !compoundTag.contains(DATA_DIALOG_DATA_SET_TAG)) {
       return;
@@ -325,6 +594,41 @@ public class DialogDataSet {
     if (compoundTag.contains(DATA_TYPE_TAG)) {
       this.dialogType = DialogType.valueOf(compoundTag.getString(DATA_TYPE_TAG).orElse(""));
     }
+
+    // Load AI config
+    if (compoundTag.contains(DATA_AI_SERVER_URL_TAG)) {
+      this.aiServerUrl = compoundTag.getString(DATA_AI_SERVER_URL_TAG).orElse("");
+    }
+    if (compoundTag.contains(DATA_AI_MODEL_NAME_TAG)) {
+      this.aiModelName = compoundTag.getString(DATA_AI_MODEL_NAME_TAG).orElse("");
+    }
+    if (compoundTag.contains(DATA_AI_SYSTEM_PROMPT_TAG)) {
+      this.aiSystemPrompt = compoundTag.getString(DATA_AI_SYSTEM_PROMPT_TAG).orElse("");
+    }
+    if (compoundTag.contains(DATA_AI_API_KEY_TAG)) {
+      this.aiApiKey = compoundTag.getString(DATA_AI_API_KEY_TAG).orElse("");
+    }
+    if (compoundTag.contains(DATA_AI_MAX_HISTORY_TAG)) {
+      this.aiMaxHistorySize = compoundTag.getInt(DATA_AI_MAX_HISTORY_TAG).orElse(20);
+    }
+    if (compoundTag.contains(DATA_AI_SPEECH_BUBBLE_TAG)) {
+      this.aiSpeechBubbleEnabled = compoundTag.getBoolean(DATA_AI_SPEECH_BUBBLE_TAG).orElse(false);
+    }
+    if (compoundTag.contains(DATA_AI_SPEECH_BUBBLE_RADIUS_TAG)) {
+      this.aiSpeechBubbleRadius = compoundTag.getInt(DATA_AI_SPEECH_BUBBLE_RADIUS_TAG).orElse(8);
+    }
+    if (compoundTag.contains(DATA_AI_SPEECH_BUBBLE_INTERVAL_TAG)) {
+      this.aiSpeechBubbleIntervalTicks = compoundTag.getInt(DATA_AI_SPEECH_BUBBLE_INTERVAL_TAG).orElse(1200);
+    }
+    this.aiPersonaName = compoundTag.getString(DATA_AI_PERSONA_NAME_TAG).orElse("");
+    this.aiPersonaRace = compoundTag.getString(DATA_AI_PERSONA_RACE_TAG).orElse("");
+    this.aiPersonaClass = compoundTag.getString(DATA_AI_PERSONA_CLASS_TAG).orElse("");
+    this.aiPersonaAlignment = compoundTag.getString(DATA_AI_PERSONA_ALIGNMENT_TAG).orElse("");
+    this.aiPersonaPersonality = compoundTag.getString(DATA_AI_PERSONA_PERSONALITY_TAG).orElse("");
+    this.aiPersonaQuirks = compoundTag.getString(DATA_AI_PERSONA_QUIRKS_TAG).orElse("");
+    this.aiPersonaBackstory = compoundTag.getString(DATA_AI_PERSONA_BACKSTORY_TAG).orElse("");
+    this.aiPersonaGoals = compoundTag.getString(DATA_AI_PERSONA_GOALS_TAG).orElse("");
+    this.aiPersonaSpeechStyle = compoundTag.getString(DATA_AI_PERSONA_SPEECH_STYLE_TAG).orElse("");
 
     // Load dialog data
     this.dialogByLabelMap.clear();
@@ -352,7 +656,26 @@ public class DialogDataSet {
     compoundTag.put(DATA_DIALOG_DATA_SET_TAG, dialogListTag);
 
     // Handle dialog type to avoid wrong dialog types after using the dialog editor.
-    if ((this.dialogType == DialogType.BASIC && this.dialogByIdMap.size() > 1)
+    if (this.dialogType == DialogType.AI) {
+      // AI type: preserve it regardless of dialog count, save AI config
+      compoundTag.putString(DATA_AI_SERVER_URL_TAG, this.aiServerUrl);
+      compoundTag.putString(DATA_AI_MODEL_NAME_TAG, this.aiModelName);
+      compoundTag.putString(DATA_AI_SYSTEM_PROMPT_TAG, this.aiSystemPrompt);
+      compoundTag.putString(DATA_AI_API_KEY_TAG, this.aiApiKey);
+      compoundTag.putInt(DATA_AI_MAX_HISTORY_TAG, this.aiMaxHistorySize);
+      compoundTag.putBoolean(DATA_AI_SPEECH_BUBBLE_TAG, this.aiSpeechBubbleEnabled);
+      compoundTag.putInt(DATA_AI_SPEECH_BUBBLE_RADIUS_TAG, this.aiSpeechBubbleRadius);
+      compoundTag.putInt(DATA_AI_SPEECH_BUBBLE_INTERVAL_TAG, this.aiSpeechBubbleIntervalTicks);
+      compoundTag.putString(DATA_AI_PERSONA_NAME_TAG, this.aiPersonaName);
+      compoundTag.putString(DATA_AI_PERSONA_RACE_TAG, this.aiPersonaRace);
+      compoundTag.putString(DATA_AI_PERSONA_CLASS_TAG, this.aiPersonaClass);
+      compoundTag.putString(DATA_AI_PERSONA_ALIGNMENT_TAG, this.aiPersonaAlignment);
+      compoundTag.putString(DATA_AI_PERSONA_PERSONALITY_TAG, this.aiPersonaPersonality);
+      compoundTag.putString(DATA_AI_PERSONA_QUIRKS_TAG, this.aiPersonaQuirks);
+      compoundTag.putString(DATA_AI_PERSONA_BACKSTORY_TAG, this.aiPersonaBackstory);
+      compoundTag.putString(DATA_AI_PERSONA_GOALS_TAG, this.aiPersonaGoals);
+      compoundTag.putString(DATA_AI_PERSONA_SPEECH_STYLE_TAG, this.aiPersonaSpeechStyle);
+    } else if ((this.dialogType == DialogType.BASIC && this.dialogByIdMap.size() > 1)
         || (this.dialogType == DialogType.YES_NO && this.dialogByIdMap.size() > 3)) {
       this.dialogType = DialogType.STANDARD;
     } else if (this.dialogByIdMap.isEmpty()) {

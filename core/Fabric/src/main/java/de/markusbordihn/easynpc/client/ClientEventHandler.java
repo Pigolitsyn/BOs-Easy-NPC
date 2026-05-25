@@ -19,10 +19,15 @@
 
 package de.markusbordihn.easynpc.client;
 
+import de.markusbordihn.easynpc.client.ai.AISpeechBubbleRenderer;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientLifecycleEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
+import org.joml.Quaternionf;
 
 public class ClientEventHandler {
 
@@ -32,6 +37,19 @@ public class ClientEventHandler {
     ClientLifecycleEvents.CLIENT_STARTED.register(ClientEventHandler::onClientStarted);
     ClientPlayConnectionEvents.JOIN.register((handler, sender, client) -> {});
     ClientPlayConnectionEvents.DISCONNECT.register(ClientEventHandler::onDisconnect);
+    WorldRenderEvents.AFTER_ENTITIES.register(ClientEventHandler::onAfterEntities);
+  }
+
+  private static void onAfterEntities(WorldRenderContext context) {
+    if (context == null || context.matrices() == null) {
+      return;
+    }
+    Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
+    if (camera == null) {
+      return;
+    }
+    AISpeechBubbleRenderer.renderAll(
+        context.matrices(), camera.position(), new Quaternionf(camera.rotation()));
   }
 
   public static void onClientStarted(Minecraft client) {

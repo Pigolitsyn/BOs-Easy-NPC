@@ -22,6 +22,7 @@ package de.markusbordihn.easynpc.entity.easynpc.data;
 import de.markusbordihn.easynpc.data.dialog.DialogButtonEntry;
 import de.markusbordihn.easynpc.data.dialog.DialogDataEntry;
 import de.markusbordihn.easynpc.data.dialog.DialogDataSet;
+import de.markusbordihn.easynpc.data.dialog.DialogType;
 import de.markusbordihn.easynpc.data.server.ServerDataAccessor;
 import de.markusbordihn.easynpc.data.server.ServerDataIndex;
 import de.markusbordihn.easynpc.data.server.ServerEntityData;
@@ -109,7 +110,14 @@ public interface DialogDataCapable<T extends Mob> extends EasyNPC<T> {
   }
 
   default void openDefaultDialog(ServerPlayer serverPlayer) {
-    DialogDataEntry dialog = getDialogDataSet().getNextAvailableDialog(serverPlayer);
+    DialogDataSet dialogDataSet = getDialogDataSet();
+    if (dialogDataSet != null && dialogDataSet.getType() == DialogType.AI) {
+      MenuManager.getMenuHandler().openAIChatMenu(serverPlayer, this, 0);
+      return;
+    }
+    DialogDataEntry dialog = dialogDataSet != null
+        ? dialogDataSet.getNextAvailableDialog(serverPlayer)
+        : null;
     if (dialog != null) {
       this.openDialog(serverPlayer, dialog.getId());
     }

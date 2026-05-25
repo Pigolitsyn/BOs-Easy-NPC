@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc.menu;
 
 import de.markusbordihn.easynpc.Constants;
+import de.markusbordihn.easynpc.menu.dialog.AIChatDialogMenuWrapper;
 import de.markusbordihn.easynpc.menu.dialog.DialogMenuWrapper;
 import net.minecraft.core.Registry;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -43,4 +44,10 @@ public class ModMenuTypes {
           BuiltInRegistries.MENU,
           ModMenuType.DIALOG.getId(),
           new MenuType<>(DialogMenuWrapper::new, FeatureFlagSet.of()));
+
+  public static final MenuType<AIChatDialogMenuWrapper> AI_CHAT_DIALOG_MENU =
+      Registry.register(
+          BuiltInRegistries.MENU,
+          ModMenuType.AI_CHAT_DIALOG.getId(),
+          new MenuType<>(AIChatDialogMenuWrapper::new, FeatureFlagSet.of()));
 }

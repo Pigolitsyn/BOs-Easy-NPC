@@ -36,6 +36,7 @@ public final class DialogDataEntry {
   public static final String DATA_DIALOG_NAME = "Name";
   public static final String DATA_LABEL_TAG = "Label";
   public static final String DATA_OPTIONS_TAG = "Options";
+  public static final String DATA_PARENT_DIALOG_ID_TAG = "ParentDialogId";
   public static final String DATA_PRIORITY_TAG = "Priority";
   public static final String DATA_TEXTS_TAG = "Texts";
   public static final String DATA_TEXT_TAG = "Text";
@@ -45,6 +46,7 @@ public final class DialogDataEntry {
   private Set<ConditionDataEntry> conditions = new LinkedHashSet<>();
   private DialogOptionsData dialogOptions = null;
   private UUID id;
+  private UUID parentDialogId = null;
   private String label = "";
   private String name;
   private int priority;
@@ -78,6 +80,18 @@ public final class DialogDataEntry {
 
   public UUID getId() {
     return this.id;
+  }
+
+  public UUID getParentDialogId() {
+    return this.parentDialogId;
+  }
+
+  public void setParentDialogId(UUID parentDialogId) {
+    this.parentDialogId = parentDialogId;
+  }
+
+  public boolean isRoot() {
+    return this.parentDialogId == null;
   }
 
   public String getLabel() {
@@ -315,6 +329,16 @@ public final class DialogDataEntry {
           DialogOptionsData.load(
               compoundTag.getCompound(DATA_OPTIONS_TAG).orElse(new CompoundTag()));
     }
+
+    if (compoundTag.contains(DATA_PARENT_DIALOG_ID_TAG)) {
+      try {
+        this.parentDialogId = UUID.fromString(compoundTag.getString(DATA_PARENT_DIALOG_ID_TAG).orElse(""));
+      } catch (IllegalArgumentException ignored) {
+        this.parentDialogId = null;
+      }
+    } else {
+      this.parentDialogId = null;
+    }
   }
 
   public CompoundTag save(CompoundTag compoundTag) {
@@ -362,6 +386,10 @@ public final class DialogDataEntry {
       compoundTag.put(DATA_OPTIONS_TAG, this.dialogOptions.createTag());
     }
 
+    if (this.parentDialogId != null) {
+      compoundTag.putString(DATA_PARENT_DIALOG_ID_TAG, this.parentDialogId.toString());
+    }
+
     return compoundTag;
   }
 
@@ -377,6 +405,8 @@ public final class DialogDataEntry {
         + this.name
         + ", label="
         + this.label
+        + ", parentDialogId="
+        + this.parentDialogId
         + ", texts="
         + this.dialogTexts
         + ", buttons="

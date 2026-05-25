@@ -25,7 +25,9 @@ import de.markusbordihn.easynpc.network.NetworkHandlerManager;
 import de.markusbordihn.easynpc.network.message.server.ExecuteActionEventMessage;
 import de.markusbordihn.easynpc.network.message.server.ExecuteDialogButtonActionMessage;
 import de.markusbordihn.easynpc.network.message.server.OpenMenuMessage;
+import de.markusbordihn.easynpc.network.message.server.RequestAIHistoryMessage;
 import de.markusbordihn.easynpc.network.message.server.RequestDataSyncMessage;
+import de.markusbordihn.easynpc.network.message.server.SendAIMessageMessage;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import org.apache.logging.log4j.LogManager;
@@ -52,6 +54,18 @@ public interface ServerNetworkMessageHandlerInterface {
   default void openMenu(UUID uuid, UUID menuId) {
     if (uuid != null && menuId != null) {
       NetworkHandlerManager.sendMessageToServer(new OpenMenuMessage(uuid, menuId));
+    }
+  }
+
+  default void sendAIMessage(UUID npcUUID, String message) {
+    if (npcUUID != null && message != null && !message.isBlank()) {
+      NetworkHandlerManager.sendMessageToServer(new SendAIMessageMessage(npcUUID, message));
+    }
+  }
+
+  default void requestAIHistory(UUID npcUUID) {
+    if (npcUUID != null) {
+      NetworkHandlerManager.sendMessageToServer(new RequestAIHistoryMessage(npcUUID));
     }
   }
 

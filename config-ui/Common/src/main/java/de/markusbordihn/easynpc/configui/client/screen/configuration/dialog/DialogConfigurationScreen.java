@@ -34,6 +34,7 @@ public class DialogConfigurationScreen<T extends ConfigurationMenu> extends Conf
   protected Button basicDialogButton = null;
   protected Button yesNoDialogButton = null;
   protected Button advancedDialogButton = null;
+  protected Button aiDialogButton = null;
 
   public DialogConfigurationScreen(T menu, Inventory inventory, Component component) {
     super(menu, inventory, component);
@@ -91,5 +92,19 @@ public class DialogConfigurationScreen<T extends ConfigurationMenu> extends Conf
                     NetworkMessageHandlerManager.getServerHandler()
                         .openConfiguration(
                             this.getEasyNPCUUID(), ConfigurationType.ADVANCED_DIALOG)));
+    this.aiDialogButton =
+        this.addRenderableWidget(
+            new TextButton(
+                this.buttonLeftPos
+                    + this.noneDialogButton.getWidth()
+                    + this.basicDialogButton.getWidth()
+                    + this.yesNoDialogButton.getWidth()
+                    + this.advancedDialogButton.getWidth(),
+                this.buttonTopPos,
+                50,
+                "dialog.ai",
+                onPress ->
+                    NetworkMessageHandlerManager.getServerHandler()
+                        .openConfiguration(this.getEasyNPCUUID(), ConfigurationType.AI_DIALOG)));
   }
 }

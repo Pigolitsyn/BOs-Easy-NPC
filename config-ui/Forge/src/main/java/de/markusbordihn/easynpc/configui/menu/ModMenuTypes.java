@@ -29,6 +29,7 @@ import de.markusbordihn.easynpc.configui.menu.configuration.attribute.BaseAttrib
 import de.markusbordihn.easynpc.configui.menu.configuration.attribute.CombatAttributeConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.attribute.DisplayAttributeConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.AdvancedDialogConfigurationMenuWrapper;
+import de.markusbordihn.easynpc.configui.menu.configuration.dialog.AIDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.BasicDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.NoneDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.YesNoDialogConfigurationMenuWrapper;
@@ -118,6 +119,11 @@ public class ModMenuTypes {
           MENU_TYPES.register(
               ConfigurationType.ADVANCED_DIALOG.getName(),
               () -> IForgeMenuType.create(AdvancedDialogConfigurationMenuWrapper::new));
+  public static final RegistryObject<MenuType<AIDialogConfigurationMenuWrapper>>
+      AI_DIALOG_CONFIGURATION_MENU =
+          MENU_TYPES.register(
+              ConfigurationType.AI_DIALOG.getName(),
+              () -> IForgeMenuType.create(AIDialogConfigurationMenuWrapper::new));
   public static final RegistryObject<MenuType<AdvancedPoseConfigurationMenuWrapper>>
       ADVANCED_POSE_CONFIGURATION_MENU =
           MENU_TYPES.register(

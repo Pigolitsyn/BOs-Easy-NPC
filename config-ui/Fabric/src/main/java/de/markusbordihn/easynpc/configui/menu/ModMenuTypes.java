@@ -29,6 +29,7 @@ import de.markusbordihn.easynpc.configui.menu.configuration.attribute.BaseAttrib
 import de.markusbordihn.easynpc.configui.menu.configuration.attribute.CombatAttributeConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.attribute.DisplayAttributeConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.AdvancedDialogConfigurationMenuWrapper;
+import de.markusbordihn.easynpc.configui.menu.configuration.dialog.AIDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.BasicDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.NoneDialogConfigurationMenuWrapper;
 import de.markusbordihn.easynpc.configui.menu.configuration.dialog.YesNoDialogConfigurationMenuWrapper;
@@ -394,4 +395,9 @@ public class ModMenuTypes {
               BuiltInRegistries.MENU,
               ConfigurationType.YES_NO_DIALOG.getId(),
               new MenuType<>(YesNoDialogConfigurationMenuWrapper::new, FeatureFlagSet.of()));
+  public static final MenuType<AIDialogConfigurationMenuWrapper> AI_DIALOG_CONFIGURATION_MENU =
+      Registry.register(
+          BuiltInRegistries.MENU,
+          ConfigurationType.AI_DIALOG.getId(),
+          new MenuType<>(AIDialogConfigurationMenuWrapper::new, FeatureFlagSet.of()));
 }

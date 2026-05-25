@@ -46,6 +46,7 @@ public class ConfigurationTypeHelper {
         return switch (dialogData.getDialogDataSet().getType()) {
           case NONE -> ConfigurationType.NONE_DIALOG;
           case YES_NO -> ConfigurationType.YES_NO_DIALOG;
+          case AI -> ConfigurationType.AI_DIALOG;
           case CUSTOM, STANDARD -> ConfigurationType.ADVANCED_DIALOG;
           default -> ConfigurationType.BASIC_DIALOG;
         };
