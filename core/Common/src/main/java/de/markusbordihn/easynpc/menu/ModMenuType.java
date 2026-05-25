@@ -25,6 +25,7 @@ import net.minecraft.resources.Identifier;
 
 public enum ModMenuType {
   DIALOG,
+  AI_CHAT_DIALOG,
   SPAWNER,
   ;
 

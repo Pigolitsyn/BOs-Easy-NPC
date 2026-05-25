@@ -21,12 +21,17 @@ package de.markusbordihn.easynpc.network;
 
 import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.network.message.NetworkMessageRecord;
+import de.markusbordihn.easynpc.network.message.client.LoadAIHistoryMessage;
 import de.markusbordihn.easynpc.network.message.client.OpenMenuCallbackMessage;
+import de.markusbordihn.easynpc.network.message.client.NPCSpeakMessage;
+import de.markusbordihn.easynpc.network.message.client.ReceiveAIMessageMessage;
 import de.markusbordihn.easynpc.network.message.client.SyncDataMessage;
 import de.markusbordihn.easynpc.network.message.server.ExecuteActionEventMessage;
 import de.markusbordihn.easynpc.network.message.server.ExecuteDialogButtonActionMessage;
 import de.markusbordihn.easynpc.network.message.server.OpenMenuMessage;
+import de.markusbordihn.easynpc.network.message.server.RequestAIHistoryMessage;
 import de.markusbordihn.easynpc.network.message.server.RequestDataSyncMessage;
+import de.markusbordihn.easynpc.network.message.server.SendAIMessageMessage;
 import net.minecraft.server.level.ServerPlayer;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -107,6 +112,24 @@ public class NetworkHandlerManager {
         SyncDataMessage.STREAM_CODEC,
         SyncDataMessage.class,
         SyncDataMessage::create);
+
+    networkHandler.registerClientNetworkMessage(
+        ReceiveAIMessageMessage.PAYLOAD_TYPE,
+        ReceiveAIMessageMessage.STREAM_CODEC,
+        ReceiveAIMessageMessage.class,
+        ReceiveAIMessageMessage::create);
+
+    networkHandler.registerClientNetworkMessage(
+        NPCSpeakMessage.PAYLOAD_TYPE,
+        NPCSpeakMessage.STREAM_CODEC,
+        NPCSpeakMessage.class,
+        NPCSpeakMessage::create);
+
+    networkHandler.registerClientNetworkMessage(
+        LoadAIHistoryMessage.PAYLOAD_TYPE,
+        LoadAIHistoryMessage.STREAM_CODEC,
+        LoadAIHistoryMessage.class,
+        LoadAIHistoryMessage::create);
   }
 
   public static void registerServerNetworkHandler() {
@@ -141,5 +164,17 @@ public class NetworkHandlerManager {
         RequestDataSyncMessage.STREAM_CODEC,
         RequestDataSyncMessage.class,
         RequestDataSyncMessage::create);
+
+    networkHandler.registerServerNetworkMessage(
+        SendAIMessageMessage.PAYLOAD_TYPE,
+        SendAIMessageMessage.STREAM_CODEC,
+        SendAIMessageMessage.class,
+        SendAIMessageMessage::create);
+
+    networkHandler.registerServerNetworkMessage(
+        RequestAIHistoryMessage.PAYLOAD_TYPE,
+        RequestAIHistoryMessage.STREAM_CODEC,
+        RequestAIHistoryMessage.class,
+        RequestAIHistoryMessage::create);
   }
 }

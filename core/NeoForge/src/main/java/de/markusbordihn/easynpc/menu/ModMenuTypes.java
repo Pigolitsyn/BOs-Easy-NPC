@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc.menu;
 
 import de.markusbordihn.easynpc.Constants;
+import de.markusbordihn.easynpc.menu.dialog.AIChatDialogMenuWrapper;
 import de.markusbordihn.easynpc.menu.dialog.DialogMenuWrapper;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.inventory.MenuType;
@@ -37,4 +38,10 @@ public class ModMenuTypes {
   public static final DeferredHolder<MenuType<?>, MenuType<DialogMenuWrapper>> DIALOG_MENU =
       MENU_TYPES.register(
           ModMenuType.DIALOG.getName(), () -> IMenuTypeExtension.create(DialogMenuWrapper::new));
+
+  public static final DeferredHolder<MenuType<?>, MenuType<AIChatDialogMenuWrapper>>
+      AI_CHAT_DIALOG_MENU =
+          MENU_TYPES.register(
+              ModMenuType.AI_CHAT_DIALOG.getName(),
+              () -> IMenuTypeExtension.create(AIChatDialogMenuWrapper::new));
 }

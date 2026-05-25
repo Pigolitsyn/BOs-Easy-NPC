@@ -22,6 +22,7 @@ package de.markusbordihn.easynpc.menu;
 import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.data.screen.ScreenData;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
+import de.markusbordihn.easynpc.menu.dialog.AIChatDialogMenu;
 import de.markusbordihn.easynpc.menu.dialog.DialogMenu;
 import de.markusbordihn.easynpc.menu.dialog.DialogMenuHandler;
 import java.util.UUID;
@@ -60,4 +61,41 @@ public interface MenuHandlerInterface {
   }
 
   MenuType<? extends DialogMenu> getDialogMenuType();
+
+  default MenuType<? extends AIChatDialogMenu> getAIChatDialogMenuType() {
+    return null;
+  }
+
+  default void openAIChatMenu(
+      final ServerPlayer serverPlayer, final EasyNPC<?> easyNPC, int pageIndex) {
+
+    final MenuType<? extends AIChatDialogMenu> menuType = getAIChatDialogMenuType();
+    if (menuType == null) {
+      log.warn("AI chat dialog menu type not registered, falling back to normal dialog");
+      openDialogMenu(serverPlayer, easyNPC, null, pageIndex);
+      return;
+    }
+
+    final ScreenData screenData =
+        DialogMenuHandler.getScreenData(easyNPC, null, pageIndex, serverPlayer);
+
+    final MenuProvider menuProvider =
+        new MenuProvider() {
+          @Override
+          public net.minecraft.world.inventory.AbstractContainerMenu createMenu(
+              int containerId,
+              net.minecraft.world.entity.player.Inventory playerInventory,
+              net.minecraft.world.entity.player.Player player) {
+            return new AIChatDialogMenu(menuType, containerId, playerInventory, screenData.encode());
+          }
+
+          @Override
+          public net.minecraft.network.chat.Component getDisplayName() {
+            return easyNPC.getEntity().getName();
+          }
+        };
+
+    final UUID npcUUID = easyNPC.getEntityUUID();
+    MenuManager.openMenu(npcUUID, menuProvider, serverPlayer, screenData.encode());
+  }
 }

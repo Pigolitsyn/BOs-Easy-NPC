@@ -19,6 +19,7 @@
 
 package de.markusbordihn.easynpc.menu;
 
+import de.markusbordihn.easynpc.menu.dialog.AIChatDialogMenu;
 import de.markusbordihn.easynpc.menu.dialog.DialogMenu;
 import net.minecraft.world.inventory.MenuType;
 
@@ -31,5 +32,10 @@ public class MenuHandler implements MenuHandlerInterface {
   @Override
   public MenuType<? extends DialogMenu> getDialogMenuType() {
     return ModMenuTypes.DIALOG_MENU.get();
+  }
+
+  @Override
+  public MenuType<? extends AIChatDialogMenu> getAIChatDialogMenuType() {
+    return ModMenuTypes.AI_CHAT_DIALOG_MENU.get();
   }
 }

@@ -72,6 +72,8 @@ public class DialogEditorScreen<T extends EditorMenu> extends EditorScreen<T> {
   protected TextField dialogPriorityTextField;
   protected TextField dialogNameTextField;
   protected Button dialogOptionsButton;
+  protected TextField parentDialogTextField;
+  protected Button clearParentButton;
   private String dialogLabelValue = "";
   private String dialogNameValue = "";
   private int dialogPriorityValue = 0;
@@ -160,6 +162,16 @@ public class DialogEditorScreen<T extends EditorMenu> extends EditorScreen<T> {
           Constants.FONT_COLOR_BLACK);
     }
 
+    if (this.parentDialogTextField != null) {
+      Text.drawConfigString(
+          guiGraphics,
+          this.font,
+          "dialog.parent",
+          leftPos + 10,
+          this.parentDialogTextField.getY() + 4,
+          Constants.FONT_COLOR_BLACK);
+    }
+
     if (this.dialogTextButton != null) {
       Text.drawConfigString(
           guiGraphics,
@@ -188,10 +200,15 @@ public class DialogEditorScreen<T extends EditorMenu> extends EditorScreen<T> {
       }
     }
 
+    String parentLabel =
+        this.parentDialogTextField != null ? this.parentDialogTextField.getValue().trim() : "";
+    java.util.UUID newParentId = resolveParentDialogId(parentLabel);
+
     boolean hasChanged =
         !this.dialogNameTextField.getValue().equals(this.dialogNameValue)
             || !this.dialogLabelTextField.getValue().equals(this.dialogLabelValue)
-            || currentPriority != this.dialogPriorityValue;
+            || currentPriority != this.dialogPriorityValue
+            || !java.util.Objects.equals(newParentId, this.getDialogData().getParentDialogId());
     if (!hasChanged) {
       return;
     }
@@ -200,9 +217,33 @@ public class DialogEditorScreen<T extends EditorMenu> extends EditorScreen<T> {
     dialogDataEntry.setName(this.dialogNameTextField.getValue());
     dialogDataEntry.setLabel(this.dialogLabelTextField.getValue());
     dialogDataEntry.setPriority(currentPriority);
+    dialogDataEntry.setParentDialogId(newParentId);
 
     NetworkMessageHandlerManager.getServerHandler()
         .saveDialog(this.getEasyNPCUUID(), this.getDialogUUID(), dialogDataEntry);
+  }
+
+  private java.util.UUID resolveParentDialogId(String parentLabel) {
+    if (parentLabel.isEmpty()) {
+      return null;
+    }
+    de.markusbordihn.easynpc.data.dialog.DialogDataSet dataSet = this.getDialogDataSet();
+    if (dataSet != null && dataSet.hasDialog(parentLabel)) {
+      return dataSet.getDialogId(parentLabel);
+    }
+    return null;
+  }
+
+  private String resolveParentLabel(java.util.UUID parentId) {
+    if (parentId == null) {
+      return "";
+    }
+    de.markusbordihn.easynpc.data.dialog.DialogDataSet dataSet = this.getDialogDataSet();
+    if (dataSet == null) {
+      return "";
+    }
+    de.markusbordihn.easynpc.data.dialog.DialogDataEntry parent = dataSet.getDialog(parentId);
+    return parent != null ? parent.getLabel() : "";
   }
 
   @Override
@@ -343,12 +384,39 @@ public class DialogEditorScreen<T extends EditorMenu> extends EditorScreen<T> {
                       .openDialogOptionsEditor(this.getEasyNPCUUID(), this.getDialogUUID());
                 }));
 
+    // Parent dialog field (for dialog tree structure)
+    String currentParentLabel = resolveParentLabel(dialogDataEntry.getParentDialogId());
+    this.parentDialogTextField =
+        new TextField(
+            this.font,
+            this.leftPos + 99,
+            this.dialogOptionsButton.getY() + this.dialogOptionsButton.getHeight() + OPTION_SPACING,
+            110);
+    this.parentDialogTextField.setMaxLength(DialogDataEntry.MAX_DIALOG_LABEL_LENGTH);
+    this.parentDialogTextField.setValue(currentParentLabel);
+    this.addRenderableWidget(this.parentDialogTextField);
+
+    this.clearParentButton =
+        this.addRenderableWidget(
+            new de.markusbordihn.easynpc.client.screen.components.TextButton(
+                this.parentDialogTextField.getX() + this.parentDialogTextField.getWidth() + 2,
+                this.parentDialogTextField.getY(),
+                28,
+                16,
+                "✕",
+                onPress -> {
+                  if (this.parentDialogTextField != null) {
+                    this.parentDialogTextField.setValue("");
+                  }
+                }));
+
     this.dialogTextButton =
         this.addRenderableWidget(
             new TextEditButton(
                 this.leftPos + 7,
-                this.dialogOptionsButton.getY()
-                    + (this.dialogOptionsButton.getHeight() * 2)
+                this.parentDialogTextField.getY()
+                    + this.parentDialogTextField.getHeight()
+                    + this.parentDialogTextField.getHeight()
                     + OPTION_SPACING,
                 315,
                 "dialog.edit_text",

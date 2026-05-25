@@ -43,6 +43,8 @@ public class MenuHandler implements MenuHandlerInterface {
     configurationMenuMap.put(
         ConfigurationType.ADVANCED_DIALOG, ModMenuTypes.ADVANCED_DIALOG_CONFIGURATION_MENU);
     configurationMenuMap.put(
+        ConfigurationType.AI_DIALOG, ModMenuTypes.AI_DIALOG_CONFIGURATION_MENU);
+    configurationMenuMap.put(
         ConfigurationType.ADVANCED_POSE, ModMenuTypes.ADVANCED_POSE_CONFIGURATION_MENU);
     configurationMenuMap.put(
         ConfigurationType.ADVANCED_TRADING, ModMenuTypes.ADVANCED_TRADING_CONFIGURATION_MENU);

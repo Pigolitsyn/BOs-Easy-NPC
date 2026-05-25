@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc.configui.client.screen.configuration.dialog;
 
 import de.markusbordihn.easynpc.client.screen.components.Text;
+import de.markusbordihn.easynpc.client.screen.components.TextButton;
 import de.markusbordihn.easynpc.configui.Constants;
 import de.markusbordihn.easynpc.configui.client.screen.components.AddButton;
 import de.markusbordihn.easynpc.configui.client.screen.components.CopyButton;
@@ -28,10 +29,13 @@ import de.markusbordihn.easynpc.configui.client.screen.components.TextEditButton
 import de.markusbordihn.easynpc.configui.menu.configuration.ConfigurationMenu;
 import de.markusbordihn.easynpc.configui.network.NetworkMessageHandlerManager;
 import de.markusbordihn.easynpc.data.dialog.DialogDataEntry;
+import de.markusbordihn.easynpc.data.dialog.DialogDataSet;
 import de.markusbordihn.easynpc.data.dialog.DialogPriority;
 import de.markusbordihn.easynpc.network.components.TextComponent;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.List;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -63,11 +67,28 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
   private static final float TEXT_SCALE = 0.75f;
 
   Button newDialogButton;
+  Button toggleViewButton;
 
   DialogList dialogList;
+  TreeDialogList treeDialogList;
+
+  private boolean treeViewActive = false;
 
   public AdvancedDialogConfigurationScreen(T menu, Inventory inventory, Component component) {
     super(menu, inventory, component);
+  }
+
+  private void toggleView() {
+    treeViewActive = !treeViewActive;
+    toggleViewButton.setMessage(
+        TextComponent.getText(treeViewActive ? "List View" : "Tree View"));
+
+    // Rebuild lists so they reflect current data
+    if (treeViewActive) {
+      treeDialogList = new TreeDialogList();
+    } else {
+      dialogList = new DialogList();
+    }
   }
 
   @Override
@@ -76,6 +97,17 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
 
     // Default button stats
     this.advancedDialogButton.active = false;
+
+    // Toggle List/Tree view button
+    this.toggleViewButton =
+        this.addRenderableWidget(
+            new TextButton(
+                this.contentLeftPos + 4,
+                this.contentTopPos - 14,
+                64,
+                16,
+                "Tree View",
+                onPress -> toggleView()));
 
     // Add new dialog button
     this.newDialogButton =
@@ -89,9 +121,12 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
                     NetworkMessageHandlerManager.getServerHandler()
                         .openDialogEditor(this.getEasyNPCUUID())));
 
-    // Dialog List
+    // Dialog List (default view)
     this.dialogList = new DialogList();
     this.addWidget(this.dialogList);
+
+    // Tree list (built lazily on toggle)
+    this.treeDialogList = null;
   }
 
   @Override
@@ -106,29 +141,10 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
     // Gray background for dialog list
     guiGraphics.fill(listLeft, listTop, listRight, listBottom, 0xffeeeeee);
 
-    // Draw vertical separator lines for entries
-    guiGraphics.fill(
-        this.leftPos + COLUMN_LABEL_START - 1,
-        listTop,
-        this.leftPos + COLUMN_LABEL_START,
-        this.contentTopPos + LIST_AREA_BOTTOM,
-        0xffbbbbbb);
-    guiGraphics.fill(
-        this.leftPos + COLUMN_NAME_START,
-        listTop,
-        this.leftPos + COLUMN_NAME_START + 1,
-        this.contentTopPos + LIST_AREA_BOTTOM,
-        0xffbbbbbb);
-    guiGraphics.fill(
-        this.leftPos + COLUMN_TEXT_START - 1,
-        listTop,
-        this.leftPos + COLUMN_TEXT_START,
-        this.contentTopPos + LIST_AREA_BOTTOM,
-        0xffbbbbbb);
-
-    // Render dialog list
-    if (this.dialogList != null) {
-      this.dialogList.renderSelectionList(guiGraphics, x, y, partialTicks);
+    if (!treeViewActive) {
+      renderListView(guiGraphics, x, y, partialTicks, listLeft, listRight, listTop, listBottom);
+    } else {
+      renderTreeView(guiGraphics, x, y, partialTicks, listLeft, listRight, listTop, listBottom);
     }
 
     // Header background
@@ -139,63 +155,125 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
     guiGraphics.fill(
         listLeft, this.contentTopPos + LIST_AREA_BOTTOM + 1, listRight, listBottom, 0xffc6c6c6);
 
-    // Dialog Data Set header
+    // Header labels
     int headerLeft = this.leftPos + COLUMN_PRIORITY_START + 5;
-    Text.drawString(
-        guiGraphics,
-        this.font,
-        "Prio",
-        headerLeft,
-        this.contentTopPos + 5,
-        Constants.FONT_COLOR_BLACK);
-    Text.drawConfigString(
-        guiGraphics,
-        this.font,
-        "label_id",
-        this.leftPos + COLUMN_LABEL_START + 3,
-        this.contentTopPos + 5,
-        Constants.FONT_COLOR_BLACK);
-    Text.drawString(
-        guiGraphics,
-        this.font,
-        "Name",
-        this.leftPos + COLUMN_NAME_START + 3,
-        this.contentTopPos + 5,
-        Constants.FONT_COLOR_BLACK);
-    Text.drawString(
-        guiGraphics,
-        this.font,
-        "Text",
-        this.leftPos + COLUMN_TEXT_START + 2,
-        this.contentTopPos + 5,
-        Constants.FONT_COLOR_BLACK);
+    if (!treeViewActive) {
+      Text.drawString(
+          guiGraphics,
+          this.font,
+          "Prio",
+          headerLeft,
+          this.contentTopPos + 5,
+          Constants.FONT_COLOR_BLACK);
+      Text.drawConfigString(
+          guiGraphics,
+          this.font,
+          "label_id",
+          this.leftPos + COLUMN_LABEL_START + 3,
+          this.contentTopPos + 5,
+          Constants.FONT_COLOR_BLACK);
+      Text.drawString(
+          guiGraphics,
+          this.font,
+          "Name",
+          this.leftPos + COLUMN_NAME_START + 3,
+          this.contentTopPos + 5,
+          Constants.FONT_COLOR_BLACK);
+      Text.drawString(
+          guiGraphics,
+          this.font,
+          "Text",
+          this.leftPos + COLUMN_TEXT_START + 2,
+          this.contentTopPos + 5,
+          Constants.FONT_COLOR_BLACK);
 
-    // Draw vertical separator lines for headers
-    guiGraphics.fill(
-        this.leftPos + COLUMN_LABEL_START - 1,
-        this.contentTopPos,
-        this.leftPos + COLUMN_LABEL_START,
-        this.contentTopPos + HEADER_HEIGHT,
-        0xff666666);
-    guiGraphics.fill(
-        this.leftPos + COLUMN_NAME_START,
-        this.contentTopPos,
-        this.leftPos + COLUMN_NAME_START + 1,
-        this.contentTopPos + HEADER_HEIGHT,
-        0xff666666);
-    guiGraphics.fill(
-        this.leftPos + COLUMN_TEXT_START - 1,
-        this.contentTopPos,
-        this.leftPos + COLUMN_TEXT_START,
-        this.contentTopPos + HEADER_HEIGHT,
-        0xff666666);
+      // Vertical separator lines for headers
+      guiGraphics.fill(
+          this.leftPos + COLUMN_LABEL_START - 1,
+          this.contentTopPos,
+          this.leftPos + COLUMN_LABEL_START,
+          this.contentTopPos + HEADER_HEIGHT,
+          0xff666666);
+      guiGraphics.fill(
+          this.leftPos + COLUMN_NAME_START,
+          this.contentTopPos,
+          this.leftPos + COLUMN_NAME_START + 1,
+          this.contentTopPos + HEADER_HEIGHT,
+          0xff666666);
+      guiGraphics.fill(
+          this.leftPos + COLUMN_TEXT_START - 1,
+          this.contentTopPos,
+          this.leftPos + COLUMN_TEXT_START,
+          this.contentTopPos + HEADER_HEIGHT,
+          0xff666666);
+    } else {
+      Text.drawString(
+          guiGraphics,
+          this.font,
+          "Dialog Tree",
+          headerLeft,
+          this.contentTopPos + 5,
+          Constants.FONT_COLOR_BLACK);
+    }
 
     // Re-render button for visibility
     if (this.newDialogButton != null) {
       this.newDialogButton.render(guiGraphics, x, y, partialTicks);
     }
+    if (this.toggleViewButton != null) {
+      this.toggleViewButton.render(guiGraphics, x, y, partialTicks);
+    }
   }
 
+  private void renderListView(
+      GuiGraphics guiGraphics,
+      int x,
+      int y,
+      float partialTicks,
+      int listLeft,
+      int listRight,
+      int listTop,
+      int listBottom) {
+    // Vertical separator lines for entries
+    guiGraphics.fill(
+        this.leftPos + COLUMN_LABEL_START - 1,
+        listTop,
+        this.leftPos + COLUMN_LABEL_START,
+        this.contentTopPos + LIST_AREA_BOTTOM,
+        0xffbbbbbb);
+    guiGraphics.fill(
+        this.leftPos + COLUMN_NAME_START,
+        listTop,
+        this.leftPos + COLUMN_NAME_START + 1,
+        this.contentTopPos + LIST_AREA_BOTTOM,
+        0xffbbbbbb);
+    guiGraphics.fill(
+        this.leftPos + COLUMN_TEXT_START - 1,
+        listTop,
+        this.leftPos + COLUMN_TEXT_START,
+        this.contentTopPos + LIST_AREA_BOTTOM,
+        0xffbbbbbb);
+
+    if (this.dialogList != null) {
+      this.dialogList.renderSelectionList(guiGraphics, x, y, partialTicks);
+    }
+  }
+
+  private void renderTreeView(
+      GuiGraphics guiGraphics,
+      int x,
+      int y,
+      float partialTicks,
+      int listLeft,
+      int listRight,
+      int listTop,
+      int listBottom) {
+    if (this.treeDialogList != null) {
+      this.treeDialogList.renderSelectionList(guiGraphics, x, y, partialTicks);
+    }
+  }
+
+  /** Flat list view (original). */
   class DialogList
       extends ObjectSelectionList<AdvancedDialogConfigurationScreen<?>.DialogList.Entry> {
     DialogList() {
@@ -206,7 +284,6 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
           AdvancedDialogConfigurationScreen.this.contentTopPos + 15,
           19);
 
-      // Add all dialog data sets, sorted by priority (descending) then by label
       AdvancedDialogConfigurationScreen.this.getDialogDataSet().getDialogsByLabel().stream()
           .filter(dialogData -> dialogData != null && dialogData.getId() != null)
           .sorted(
@@ -229,19 +306,13 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
     protected void renderSelection(
         GuiGraphics guiGraphics,
         AdvancedDialogConfigurationScreen<?>.DialogList.Entry entry,
-        int color) {
-      // Do not render selection.
-    }
+        int color) {}
 
     @Override
-    protected void renderListSeparators(GuiGraphics guiGraphics) {
-      // Do not render list separators.
-    }
+    protected void renderListSeparators(GuiGraphics guiGraphics) {}
 
     @Override
-    protected void renderListBackground(GuiGraphics guiGraphics) {
-      // Do not render list background.
-    }
+    protected void renderListBackground(GuiGraphics guiGraphics) {}
 
     class Entry
         extends ObjectSelectionList.Entry<AdvancedDialogConfigurationScreen<?>.DialogList.Entry> {
@@ -302,12 +373,9 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
 
         int top = this.getY();
         int left = this.getX();
-
-        // Position
         int leftPos = left - 80;
         int buttonWidth = 16;
 
-        // Render edit button and tooltip
         this.editButton.setX(leftPos + COLUMN_NAME_START - buttonWidth - 7);
         this.editButton.setY(top);
         this.editButton.render(guiGraphics, mouseX, mouseY, partialTicks);
@@ -325,7 +393,6 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
               null);
         }
 
-        // Render copy button and tooltip
         this.copyLabelButton.setX(this.editButton.getX() - this.editButton.getWidth());
         this.copyLabelButton.setY(top);
         this.copyLabelButton.render(guiGraphics, mouseX, mouseY, partialTicks);
@@ -343,7 +410,6 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
               null);
         }
 
-        // Render edit text button and tooltip
         this.textEditButton.setX(leftPos + COLUMN_TEXT_START - 5);
         this.textEditButton.setY(top);
         this.textEditButton.render(guiGraphics, mouseX, mouseY, partialTicks);
@@ -405,7 +471,149 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
             fontColor);
         guiGraphics.pose().popMatrix();
 
-        // Draw separator line
+        int listLeft = AdvancedDialogConfigurationScreen.this.leftPos + COLUMN_PRIORITY_START;
+        int listRight =
+            AdvancedDialogConfigurationScreen.this.leftPos
+                + COLUMN_TEXT_START
+                + COLUMN_TEXT_WIDTH
+                + 4;
+        guiGraphics.fill(listLeft, top + 17, listRight, top + 18, 0xffaaaaaa);
+      }
+    }
+  }
+
+  /** Tree view - shows dialogs indented by parent-child depth. */
+  class TreeDialogList
+      extends ObjectSelectionList<AdvancedDialogConfigurationScreen<?>.TreeDialogList.Entry> {
+
+    TreeDialogList() {
+      super(
+          AdvancedDialogConfigurationScreen.this.minecraft,
+          AdvancedDialogConfigurationScreen.this.width + 60,
+          177,
+          AdvancedDialogConfigurationScreen.this.contentTopPos + 15,
+          19);
+
+      DialogDataSet dataSet = AdvancedDialogConfigurationScreen.this.getDialogDataSet();
+      List<DialogDataEntry> roots = dataSet.getRootDialogs();
+
+      if (roots.isEmpty()) {
+        // Fallback: show all sorted by label when no parent info is set
+        dataSet.getDialogsByLabel().stream()
+            .filter(d -> d != null && d.getId() != null)
+            .forEach(d -> this.addEntry(new Entry(d, 0)));
+      } else {
+        for (DialogDataEntry root : roots) {
+          addTreeEntries(dataSet, root, 0);
+        }
+      }
+    }
+
+    private void addTreeEntries(DialogDataSet dataSet, DialogDataEntry node, int depth) {
+      this.addEntry(new Entry(node, depth));
+      List<DialogDataEntry> children = new ArrayList<>(dataSet.getChildren(node.getId()));
+      children.sort(Comparator.comparing(DialogDataEntry::getLabel));
+      for (DialogDataEntry child : children) {
+        addTreeEntries(dataSet, child, depth + 1);
+      }
+    }
+
+    public void renderSelectionList(GuiGraphics guiGraphics, int x, int y, float partialTicks) {
+      if (this.getItemCount() > 0) {
+        super.render(guiGraphics, x, y, partialTicks);
+      }
+    }
+
+    @Override
+    protected void renderSelection(
+        GuiGraphics guiGraphics,
+        AdvancedDialogConfigurationScreen<?>.TreeDialogList.Entry entry,
+        int color) {}
+
+    @Override
+    protected void renderListSeparators(GuiGraphics guiGraphics) {}
+
+    @Override
+    protected void renderListBackground(GuiGraphics guiGraphics) {}
+
+    class Entry
+        extends ObjectSelectionList.Entry<
+            AdvancedDialogConfigurationScreen<?>.TreeDialogList.Entry> {
+
+      final DialogDataEntry dialogData;
+      final EditButton editButton;
+      final int depth;
+
+      public Entry(DialogDataEntry dialogData, int depth) {
+        super();
+        this.dialogData = dialogData;
+        this.depth = depth;
+        this.editButton =
+            new EditButton(
+                0,
+                0,
+                onPress ->
+                    NetworkMessageHandlerManager.getServerHandler()
+                        .openDialogEditor(
+                            AdvancedDialogConfigurationScreen.this.getEasyNPCUUID(),
+                            this.dialogData.getId()));
+      }
+
+      @Override
+      public Component getNarration() {
+        return TextComponent.getTextComponent(dialogData.getName());
+      }
+
+      @Override
+      public boolean mouseClicked(MouseButtonEvent mouseButtonEvent, boolean doubleClick) {
+        super.mouseClicked(mouseButtonEvent, doubleClick);
+        this.editButton.mouseClicked(mouseButtonEvent, doubleClick);
+        return mouseButtonEvent.button() == 0;
+      }
+
+      @Override
+      public void renderContent(
+          GuiGraphics guiGraphics, int mouseX, int mouseY, boolean isHovered, float partialTicks) {
+
+        int top = this.getY();
+        int left = this.getX();
+        int leftPos = left - 80;
+
+        // Edit button at right side
+        this.editButton.setX(leftPos + COLUMN_NAME_START - 16 - 7);
+        this.editButton.setY(top);
+        this.editButton.render(guiGraphics, mouseX, mouseY, partialTicks);
+        if (this.editButton.isHovered()) {
+          guiGraphics.renderTooltip(
+              AdvancedDialogConfigurationScreen.this.font,
+              Collections.singletonList(
+                  ClientTooltipComponent.create(
+                      TextComponent.getTranslatedConfigText(
+                              "dialog.edit_dialog", dialogData.getName())
+                          .getVisualOrderText())),
+              mouseX,
+              mouseY,
+              DefaultTooltipPositioner.INSTANCE,
+              null);
+        }
+
+        // Depth indicator: root = "■", children = "└─"
+        String depthPrefix = depth == 0 ? "■ " : "  ".repeat(depth) + "└ ";
+        String displayText =
+            depthPrefix + dialogData.getLabel(12) + " [" + dialogData.getName(10) + "]";
+        int fontColor = depth == 0 ? Constants.FONT_COLOR_BLACK : Constants.FONT_COLOR_GRAY;
+
+        guiGraphics.pose().pushMatrix();
+        guiGraphics.pose().scale(TEXT_SCALE, TEXT_SCALE);
+        Text.drawString(
+            guiGraphics,
+            AdvancedDialogConfigurationScreen.this.font,
+            displayText,
+            Math.round((leftPos + COLUMN_PRIORITY_START + 2) / TEXT_SCALE),
+            Math.round((top + 5) / TEXT_SCALE),
+            fontColor);
+        guiGraphics.pose().popMatrix();
+
         int listLeft = AdvancedDialogConfigurationScreen.this.leftPos + COLUMN_PRIORITY_START;
         int listRight =
             AdvancedDialogConfigurationScreen.this.leftPos

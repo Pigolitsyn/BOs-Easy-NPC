@@ -237,7 +237,8 @@ public interface ActionHandler<E extends Mob> extends EasyNPC<E> {
         }
 
         if ((actionType == ActionDataType.OPEN_DEFAULT_DIALOG
-                && !this.getEasyNPCDialogData().hasDialog())
+                && !this.getEasyNPCDialogData().hasDialog()
+                && !this.getEasyNPCDialogData().getDialogDataSet().hasAIConfig())
             || (actionType == ActionDataType.OPEN_NAMED_DIALOG
                 && actionDataEntry.targetUUID() == null
                 && !this.getEasyNPCDialogData().hasDialog(actionDataEntry.command()))
