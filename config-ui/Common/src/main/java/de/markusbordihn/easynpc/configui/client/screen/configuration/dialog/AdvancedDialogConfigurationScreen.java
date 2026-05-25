@@ -309,12 +309,12 @@ public class AdvancedDialogConfigurationScreen<T extends ConfigurationMenu>
         int color) {}
 
     @Override
-    protected void extractListSeparators(GuiGraphicsExtractor guiGraphics) {
+    protected void renderListSeparators(GuiGraphics guiGraphics) {
       // Do not render list separators.
     }
 
     @Override
-    protected void extractListBackground(GuiGraphicsExtractor guiGraphics) {
+    protected void renderListBackground(GuiGraphics guiGraphics) {
       // Do not render list background.
     }
 
