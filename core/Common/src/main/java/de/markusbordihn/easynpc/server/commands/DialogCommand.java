@@ -35,6 +35,7 @@ import de.markusbordihn.easynpc.data.dialog.DialogDataEntry;
 import de.markusbordihn.easynpc.data.dialog.DialogDataSet;
 import de.markusbordihn.easynpc.data.dialog.DialogPriority;
 import de.markusbordihn.easynpc.data.dialog.DialogType;
+import de.markusbordihn.easynpc.data.dialog.DialogUtils;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import de.markusbordihn.easynpc.entity.easynpc.data.DialogDataCapable;
 import java.util.List;
@@ -55,6 +56,7 @@ public class DialogCommand extends Command {
   private static final String SERVER_URL_ARG = "serverUrl";
   private static final String MODEL_ARG = "model";
   private static final String API_KEY_ARG = "apiKey";
+  private static final String PROMPT_ARG = "prompt";
 
   private DialogCommand() {}
 
@@ -82,11 +84,26 @@ public class DialogCommand extends Command {
                                                             IntegerArgumentType.getInteger(
                                                                 context, "priority")))))))
                 .then(
+                    Commands.literal("text")
+                        .then(
+                            Commands.argument(NPC_TARGET_ARG, EasyNPCArgument.npc())
+                                .then(
+                                    Commands.argument(
+                                            TEXT_ARG, StringArgumentType.greedyString())
+                                        .executes(
+                                            context ->
+                                                setDialogText(
+                                                    context.getSource(),
+                                                    EasyNPCArgument.getEntityWithAccess(
+                                                        context, NPC_TARGET_ARG),
+                                                    StringArgumentType.getString(
+                                                        context, TEXT_ARG))))))
+                .then(
                     Commands.literal("ai")
                         .then(
                             Commands.argument(NPC_TARGET_ARG, EasyNPCArgument.npc())
                                 .then(
-                                    Commands.argument(SERVER_URL_ARG, StringArgumentType.word())
+                                    Commands.argument(SERVER_URL_ARG, StringArgumentType.string())
                                         .executes(
                                             context ->
                                                 setAIDialog(
@@ -99,7 +116,7 @@ public class DialogCommand extends Command {
                                                     ""))
                                         .then(
                                             Commands.argument(
-                                                    MODEL_ARG, StringArgumentType.word())
+                                                    MODEL_ARG, StringArgumentType.string())
                                                 .executes(
                                                     context ->
                                                         setAIDialog(
@@ -129,6 +146,19 @@ public class DialogCommand extends Command {
                                                                     StringArgumentType.getString(
                                                                         context,
                                                                         API_KEY_ARG)))))))))
+        .then(
+            Commands.literal("ai_prompt")
+                .then(
+                    Commands.argument(NPC_TARGET_ARG, EasyNPCArgument.npc())
+                        .then(
+                            Commands.argument(PROMPT_ARG, StringArgumentType.greedyString())
+                                .executes(
+                                    context ->
+                                        setAIDialogPrompt(
+                                            context.getSource(),
+                                            EasyNPCArgument.getEntityWithAccess(
+                                                context, NPC_TARGET_ARG),
+                                            StringArgumentType.getString(context, PROMPT_ARG))))))
         .then(
             Commands.literal("open")
                 .then(
@@ -264,6 +294,24 @@ public class DialogCommand extends Command {
                                                 context, NPC_TARGET_ARG))))));
   }
 
+  public static int setDialogText(CommandSourceStack context, EasyNPC<?> easyNPC, String text) {
+    DialogDataCapable<?> dialogData = easyNPC.getEasyNPCDialogData();
+    if (dialogData == null) {
+      return sendFailureMessageNoDialogData(context, easyNPC);
+    }
+
+    if (text == null || text.isEmpty()) {
+      return sendFailureMessage(context, "Dialog text must not be empty!");
+    }
+
+    dialogData.setDialogDataSet(DialogUtils.getBasicDialog(text));
+
+    return sendSuccessMessage(
+        context,
+        "► Set basic dialog text for EasyNPC with UUID " + easyNPC.getEntityUUID(),
+        ChatFormatting.GREEN);
+  }
+
   public static int setAIDialog(
       CommandSourceStack context,
       EasyNPC<?> easyNPC,
@@ -291,6 +339,32 @@ public class DialogCommand extends Command {
             + (model != null && !model.isEmpty() ? model : "(default)")
             + " | apiKey: "
             + (apiKey != null && !apiKey.isEmpty() ? "***" : "(none)"),
+        ChatFormatting.GREEN);
+  }
+
+  public static int setAIDialogPrompt(
+      CommandSourceStack context, EasyNPC<?> easyNPC, String prompt) {
+    DialogDataCapable<?> dialogData = easyNPC.getEasyNPCDialogData();
+    if (dialogData == null) {
+      return sendFailureMessageNoDialogData(context, easyNPC);
+    }
+
+    if (prompt == null || prompt.isEmpty()) {
+      return sendFailureMessage(context, "AI system prompt must not be empty!");
+    }
+
+    DialogDataSet dataSet = dialogData.getDialogDataSet();
+    if (dataSet == null || dataSet.getType() != DialogType.AI) {
+      return sendFailureMessage(
+          context, "Set AI dialog first: /easy_npc dialog set ai <npc> <serverUrl> ...");
+    }
+
+    dataSet.setAISystemPrompt(prompt);
+    dialogData.setDialogDataSet(dataSet);
+
+    return sendSuccessMessage(
+        context,
+        "► Set AI system prompt for " + easyNPC + " (" + prompt.length() + " chars)",
         ChatFormatting.GREEN);
   }
 
