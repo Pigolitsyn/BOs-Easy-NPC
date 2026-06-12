@@ -91,6 +91,8 @@ public record SendAIMessageMessage(UUID npcUUID, String message) implements Netw
         dialogDataSet.getAIServerUrl(),
         dialogDataSet.getAIModelName(),
         dialogDataSet.compileEffectiveSystemPrompt(),
-        dialogDataSet.getAIApiKey());
+        dialogDataSet.getAIApiKey(),
+        dialogDataSet.getAIQuestObjective(),
+        dialogDataSet.getAIRequiredCorrect());
   }
 }
