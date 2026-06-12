@@ -22,6 +22,7 @@ package de.markusbordihn.easynpc.network.message.client;
 import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.client.screen.dialog.AIChatDialogScreen;
 import de.markusbordihn.easynpc.network.message.NetworkMessageRecord;
+import java.util.List;
 import java.util.UUID;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.FriendlyByteBuf;
@@ -30,7 +31,8 @@ import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.Identifier;
 
-public record ReceiveAIMessageMessage(UUID npcUUID, String role, String content)
+public record ReceiveAIMessageMessage(
+    UUID npcUUID, String role, String content, List<String> optionLabels)
     implements NetworkMessageRecord {
 
   public static final Identifier MESSAGE_ID =
@@ -39,8 +41,16 @@ public record ReceiveAIMessageMessage(UUID npcUUID, String role, String content)
   public static final StreamCodec<RegistryFriendlyByteBuf, ReceiveAIMessageMessage> STREAM_CODEC =
       StreamCodec.of((buffer, msg) -> msg.write(buffer), ReceiveAIMessageMessage::create);
 
+  public ReceiveAIMessageMessage(UUID npcUUID, String role, String content) {
+    this(npcUUID, role, content, List.of());
+  }
+
   public static ReceiveAIMessageMessage create(final FriendlyByteBuf buffer) {
-    return new ReceiveAIMessageMessage(buffer.readUUID(), buffer.readUtf(32), buffer.readUtf(4096));
+    return new ReceiveAIMessageMessage(
+        buffer.readUUID(),
+        buffer.readUtf(32),
+        buffer.readUtf(4096),
+        buffer.readList(listBuffer -> listBuffer.readUtf(256)));
   }
 
   @Override
@@ -48,6 +58,8 @@ public record ReceiveAIMessageMessage(UUID npcUUID, String role, String content)
     buffer.writeUUID(this.npcUUID);
     buffer.writeUtf(this.role, 32);
     buffer.writeUtf(this.content, 4096);
+    buffer.writeCollection(
+        this.optionLabels, (listBuffer, label) -> listBuffer.writeUtf(label, 256));
   }
 
   @Override
@@ -64,7 +76,7 @@ public record ReceiveAIMessageMessage(UUID npcUUID, String role, String content)
   public void handleClient() {
     Minecraft minecraft = Minecraft.getInstance();
     if (minecraft.screen instanceof AIChatDialogScreen<?> chatScreen) {
-      chatScreen.receiveMessage(this.role, this.content);
+      chatScreen.receiveMessage(this.role, this.content, this.optionLabels);
     }
   }
 }

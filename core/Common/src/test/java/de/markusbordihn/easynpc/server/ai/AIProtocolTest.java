@@ -102,4 +102,25 @@ class AIProtocolTest {
     assertFalse(reply.parsed());
     assertTrue(reply.options().isEmpty());
   }
+
+  @Test
+  void parseTopLevelJsonArrayReturnsUnparsed() {
+    AIProtocol.Reply reply = AIProtocol.parse("[{\"say\":\"x\"}]");
+    assertFalse(reply.parsed());
+    assertTrue(reply.options().isEmpty());
+  }
+
+  @Test
+  void parseTopLevelNumberReturnsUnparsed() {
+    AIProtocol.Reply reply = AIProtocol.parse("42");
+    assertFalse(reply.parsed());
+    assertTrue(reply.options().isEmpty());
+  }
+
+  @Test
+  void parseEmptyStringReturnsUnparsed() {
+    AIProtocol.Reply reply = AIProtocol.parse("");
+    assertFalse(reply.parsed());
+    assertTrue(reply.options().isEmpty());
+  }
 }

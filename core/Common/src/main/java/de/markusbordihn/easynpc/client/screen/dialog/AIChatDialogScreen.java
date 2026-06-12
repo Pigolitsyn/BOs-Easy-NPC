@@ -61,8 +61,17 @@ public class AIChatDialogScreen<T extends AIChatDialogMenu>
 
   private static final int LINE_HEIGHT = 12;
 
+  // Option buttons between chat area and input separator
+  private static final int MAX_OPTION_BUTTONS = 4;
+  private static final int OPTION_AREA_TOP = 131;
+  private static final int OPTION_BUTTON_HEIGHT = 16;
+  private static final int OPTION_BUTTON_SPACING = 2;
+  private static final int INPUT_MAX_LENGTH = 200;
+
   private final List<ChatEntry> chatHistory = new ArrayList<>();
   private final List<RenderedLine> cachedLines = new ArrayList<>();
+  private final List<Button> optionButtons = new ArrayList<>();
+  private List<String> optionLabels = new ArrayList<>();
   private EditBox inputBox;
   private boolean waitingForResponse = false;
   private int scrollOffset = 0;
@@ -92,7 +101,7 @@ public class AIChatDialogScreen<T extends AIChatDialogMenu>
             inputWidth,
             INPUT_HEIGHT,
             Component.empty());
-    this.inputBox.setMaxLength(512);
+    this.inputBox.setMaxLength(INPUT_MAX_LENGTH);
     this.inputBox.setHint(Component.literal("> Say something..."));
     this.inputBox.setFocused(true);
     this.addRenderableWidget(this.inputBox);
@@ -108,6 +117,7 @@ public class AIChatDialogScreen<T extends AIChatDialogMenu>
             .build();
     this.addRenderableWidget(sendButton);
 
+    rebuildOptionButtons();
     rebuildCachedLines();
     NetworkMessageHandlerManager.getServerHandler().requestAIHistory(this.getEasyNPCUUID());
   }
@@ -214,26 +224,75 @@ public class AIChatDialogScreen<T extends AIChatDialogMenu>
     return true;
   }
 
-  public void receiveMessage(String role, String content) {
+  public void receiveMessage(String role, String content, List<String> optionLabels) {
     this.waitingForResponse = false;
     if (content != null && !content.isEmpty()) {
       this.chatHistory.add(new ChatEntry(false, content));
       this.scrollOffset = 0;
       rebuildCachedLines();
     }
+    this.optionLabels =
+        optionLabels == null ? new ArrayList<>() : new ArrayList<>(optionLabels);
+    rebuildOptionButtons();
   }
 
   private void sendMessage() {
     String text = this.inputBox.getValue().trim();
-    if (text.isEmpty()) {
+    this.inputBox.setValue("");
+    submitText(text);
+  }
+
+  private void submitText(String text) {
+    if (text == null || text.isEmpty()) {
       return;
     }
     this.chatHistory.add(new ChatEntry(true, text));
     this.waitingForResponse = true;
     this.scrollOffset = 0;
-    this.inputBox.setValue("");
+    clearOptionButtons();
     rebuildCachedLines();
     NetworkMessageHandlerManager.getServerHandler().sendAIMessage(this.getEasyNPCUUID(), text);
+  }
+
+  private void clearOptionButtons() {
+    this.optionLabels = new ArrayList<>();
+    rebuildOptionButtons();
+  }
+
+  private void rebuildOptionButtons() {
+    for (Button optionButton : this.optionButtons) {
+      this.removeWidget(optionButton);
+    }
+    this.optionButtons.clear();
+
+    int maxX = this.leftPos + this.imageWidth - INPUT_X_OFFSET;
+    int x = this.leftPos + INPUT_X_OFFSET;
+    int y = this.topPos + OPTION_AREA_TOP;
+    int count = Math.min(this.optionLabels.size(), MAX_OPTION_BUTTONS);
+    for (int i = 0; i < count; i++) {
+      String label = this.optionLabels.get(i);
+      int buttonWidth =
+          Math.min(this.font.width(label) + 8, this.imageWidth - 2 * INPUT_X_OFFSET);
+      if (x + buttonWidth > maxX) {
+        // Wrap to the next row if the button does not fit into the current one.
+        x = this.leftPos + INPUT_X_OFFSET;
+        y += OPTION_BUTTON_HEIGHT + OPTION_BUTTON_SPACING;
+      }
+      Button optionButton =
+          Button.builder(
+                  Component.literal(label),
+                  btn -> {
+                    if (!waitingForResponse) {
+                      submitText(label);
+                    }
+                  })
+              .pos(x, y)
+              .size(buttonWidth, OPTION_BUTTON_HEIGHT)
+              .build();
+      this.optionButtons.add(optionButton);
+      this.addRenderableWidget(optionButton);
+      x += buttonWidth + OPTION_BUTTON_SPACING;
+    }
   }
 
   @Override

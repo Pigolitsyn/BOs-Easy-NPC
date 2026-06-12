@@ -310,12 +310,13 @@ public class AIDialogHandler {
 
   private static void sendReply(
       ServerPlayer serverPlayer, UUID npcId, String say, List<AIProtocol.Option> options) {
-    // TODO(next task): extend ReceiveAIMessageMessage payload to carry the dialog options.
-    if (!options.isEmpty()) {
-      log.debug("[AI] Reply carries {} options (payload support pending): {}", options.size(), options);
-    }
+    List<String> optionLabels =
+        options.stream()
+            .map(AIProtocol.Option::label)
+            .filter(label -> label != null && !label.isBlank())
+            .toList();
     NetworkHandlerManager.sendMessageToPlayer(
-        new ReceiveAIMessageMessage(npcId, "assistant", say), serverPlayer);
+        new ReceiveAIMessageMessage(npcId, "assistant", say, optionLabels), serverPlayer);
   }
 
   private static void applyQuestRail(
