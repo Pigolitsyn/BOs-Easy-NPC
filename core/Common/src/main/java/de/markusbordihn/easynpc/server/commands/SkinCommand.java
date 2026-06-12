@@ -28,6 +28,7 @@ import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPCBase;
 import de.markusbordihn.easynpc.entity.easynpc.data.SkinDataCapable;
 import de.markusbordihn.easynpc.handler.SkinHandler;
+import de.markusbordihn.easynpc.validator.UrlValidator;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 
@@ -66,7 +67,21 @@ public class SkinCommand extends Command {
                                                     EasyNPCArgument.getEntityWithAccess(
                                                         context, NPC_TARGET_ARG),
                                                     StringArgumentType.getString(
-                                                        context, VARIANT_ARG)))))))
+                                                        context, VARIANT_ARG))))))
+                .then(
+                    Commands.literal("url")
+                        .then(
+                            Commands.argument(NPC_TARGET_ARG, EasyNPCArgument.npc())
+                                .then(
+                                    Commands.argument(URL_ARG, StringArgumentType.string())
+                                        .executes(
+                                            context ->
+                                                setRemoteSkin(
+                                                    context.getSource(),
+                                                    EasyNPCArgument.getEntityWithAccess(
+                                                        context, NPC_TARGET_ARG),
+                                                    StringArgumentType.getString(
+                                                        context, URL_ARG)))))))
         .then(
             Commands.literal("layer")
                 .then(
@@ -107,6 +122,24 @@ public class SkinCommand extends Command {
 
     return sendSuccessMessage(
         context, "Successfully set skin variant " + variant + " for EasyNPC " + easyNPC);
+  }
+
+  private static int setRemoteSkin(CommandSourceStack context, EasyNPC<?> easyNPC, String url) {
+    if (easyNPC == null || url == null || url.isEmpty()) {
+      return 0;
+    }
+
+    if (!UrlValidator.isValidUrl(url)) {
+      return sendFailureMessage(context, "Invalid skin URL " + url + " for EasyNPC " + easyNPC);
+    }
+
+    if (!SkinHandler.setSkin(easyNPC, SkinDataEntry.createRemoteSkin(url))) {
+      return sendFailureMessage(
+          context, "Failed to set skin URL " + url + " for EasyNPC " + easyNPC);
+    }
+
+    return sendSuccessMessage(
+        context, "Successfully set skin URL " + url + " for EasyNPC " + easyNPC);
   }
 
   private static int setLayers(CommandSourceStack context, EasyNPC<?> easyNPC, boolean enabled) {

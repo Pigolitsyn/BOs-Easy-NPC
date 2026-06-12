@@ -50,6 +50,7 @@ public class Command {
   public static final String SPECIES_ARG = "species";
   public static final String TARGET_ARG = "target";
   public static final String TYPE_ARG = "type";
+  public static final String URL_ARG = "url";
   public static final String VALUE_ARG = "value";
   public static final String VARIANT_ARG = "variant";
   public static final String VISIBILITY_ARG = "visibility";
