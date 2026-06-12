@@ -75,6 +75,8 @@ public class DialogDataSet {
   public static final String DATA_AI_PERSONA_BACKSTORY_TAG = "AIPersonaBackstory";
   public static final String DATA_AI_PERSONA_GOALS_TAG = "AIPersonaGoals";
   public static final String DATA_AI_PERSONA_SPEECH_STYLE_TAG = "AIPersonaSpeechStyle";
+  public static final String DATA_AI_QUEST_OBJECTIVE_TAG = "AIQuestObjective";
+  public static final String DATA_AI_REQUIRED_CORRECT_TAG = "AIRequiredCorrect";
   private static final Logger log = LogManager.getLogger(Constants.LOG_NAME);
   private final HashMap<String, DialogDataEntry> dialogByLabelMap = new HashMap<>();
   private final HashMap<UUID, DialogDataEntry> dialogByIdMap = new HashMap<>();
@@ -96,6 +98,8 @@ public class DialogDataSet {
   private String aiPersonaBackstory = "";
   private String aiPersonaGoals = "";
   private String aiPersonaSpeechStyle = "";
+  private String aiQuestObjective = "";
+  private int aiRequiredCorrect = 0;
 
   public DialogDataSet() {}
 
@@ -521,6 +525,22 @@ public class DialogDataSet {
     this.aiPersonaSpeechStyle = v != null ? v : "";
   }
 
+  public String getAIQuestObjective() {
+    return this.aiQuestObjective;
+  }
+
+  public void setAIQuestObjective(String aiQuestObjective) {
+    this.aiQuestObjective = aiQuestObjective != null ? aiQuestObjective : "";
+  }
+
+  public int getAIRequiredCorrect() {
+    return this.aiRequiredCorrect;
+  }
+
+  public void setAIRequiredCorrect(int aiRequiredCorrect) {
+    this.aiRequiredCorrect = aiRequiredCorrect;
+  }
+
   public boolean hasPersona() {
     return !aiPersonaName.isEmpty()
         || !aiPersonaRace.isEmpty()
@@ -629,6 +649,8 @@ public class DialogDataSet {
     this.aiPersonaBackstory = compoundTag.getString(DATA_AI_PERSONA_BACKSTORY_TAG).orElse("");
     this.aiPersonaGoals = compoundTag.getString(DATA_AI_PERSONA_GOALS_TAG).orElse("");
     this.aiPersonaSpeechStyle = compoundTag.getString(DATA_AI_PERSONA_SPEECH_STYLE_TAG).orElse("");
+    this.aiQuestObjective = compoundTag.getString(DATA_AI_QUEST_OBJECTIVE_TAG).orElse("");
+    this.aiRequiredCorrect = compoundTag.getInt(DATA_AI_REQUIRED_CORRECT_TAG).orElse(0);
 
     // Load dialog data
     this.dialogByLabelMap.clear();
@@ -675,6 +697,8 @@ public class DialogDataSet {
       compoundTag.putString(DATA_AI_PERSONA_BACKSTORY_TAG, this.aiPersonaBackstory);
       compoundTag.putString(DATA_AI_PERSONA_GOALS_TAG, this.aiPersonaGoals);
       compoundTag.putString(DATA_AI_PERSONA_SPEECH_STYLE_TAG, this.aiPersonaSpeechStyle);
+      compoundTag.putString(DATA_AI_QUEST_OBJECTIVE_TAG, this.aiQuestObjective);
+      compoundTag.putInt(DATA_AI_REQUIRED_CORRECT_TAG, this.aiRequiredCorrect);
     } else if ((this.dialogType == DialogType.BASIC && this.dialogByIdMap.size() > 1)
         || (this.dialogType == DialogType.YES_NO && this.dialogByIdMap.size() > 3)) {
       this.dialogType = DialogType.STANDARD;

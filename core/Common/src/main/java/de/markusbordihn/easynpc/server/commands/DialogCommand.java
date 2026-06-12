@@ -173,6 +173,25 @@ public class DialogCommand extends Command {
                                                 context, NPC_TARGET_ARG),
                                             StringArgumentType.getString(context, PROMPT_ARG))))))
         .then(
+            Commands.literal("ai_quest")
+                .then(
+                    Commands.argument(NPC_TARGET_ARG, EasyNPCArgument.npc())
+                        .then(
+                            Commands.argument("objective", StringArgumentType.word())
+                                .then(
+                                    Commands.argument(
+                                            "required", IntegerArgumentType.integer(1, 99))
+                                        .executes(
+                                            context ->
+                                                setAIQuest(
+                                                    context.getSource(),
+                                                    EasyNPCArgument.getEntityWithAccess(
+                                                        context, NPC_TARGET_ARG),
+                                                    StringArgumentType.getString(
+                                                        context, "objective"),
+                                                    IntegerArgumentType.getInteger(
+                                                        context, "required")))))))
+        .then(
             Commands.literal("ai_prompt_file")
                 .then(
                     Commands.argument(NPC_TARGET_ARG, EasyNPCArgument.npc())
@@ -404,6 +423,29 @@ public class DialogCommand extends Command {
     return sendSuccessMessage(
         context,
         "► Set AI system prompt for " + easyNPC + " (" + prompt.length() + " chars)",
+        ChatFormatting.GREEN);
+  }
+
+  public static int setAIQuest(
+      CommandSourceStack context, EasyNPC<?> easyNPC, String objective, int requiredCorrect) {
+    DialogDataCapable<?> dialogData = easyNPC.getEasyNPCDialogData();
+    if (dialogData == null) {
+      return sendFailureMessageNoDialogData(context, easyNPC);
+    }
+
+    DialogDataSet dataSet = dialogData.getDialogDataSet();
+    if (dataSet == null || dataSet.getType() != DialogType.AI) {
+      return sendFailureMessage(
+          context, "Set AI dialog first: /easy_npc dialog set ai <npc> <serverUrl> ...");
+    }
+
+    dataSet.setAIQuestObjective(objective);
+    dataSet.setAIRequiredCorrect(requiredCorrect);
+    dialogData.setDialogDataSet(dataSet);
+
+    return sendSuccessMessage(
+        context,
+        "► Set AI quest for " + easyNPC + ": " + objective + ", required " + requiredCorrect,
         ChatFormatting.GREEN);
   }
 
