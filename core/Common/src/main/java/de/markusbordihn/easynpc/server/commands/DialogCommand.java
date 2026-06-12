@@ -19,10 +19,14 @@
 
 package de.markusbordihn.easynpc.server.commands;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.builder.ArgumentBuilder;
 import com.mojang.datafixers.util.Pair;
+import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.commands.Command;
 import de.markusbordihn.easynpc.commands.arguments.DialogArgument;
 import de.markusbordihn.easynpc.commands.arguments.EasyNPCArgument;
@@ -38,6 +42,11 @@ import de.markusbordihn.easynpc.data.dialog.DialogType;
 import de.markusbordihn.easynpc.data.dialog.DialogUtils;
 import de.markusbordihn.easynpc.entity.easynpc.EasyNPC;
 import de.markusbordihn.easynpc.entity.easynpc.data.DialogDataCapable;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import net.minecraft.ChatFormatting;
@@ -57,6 +66,10 @@ public class DialogCommand extends Command {
   private static final String MODEL_ARG = "model";
   private static final String API_KEY_ARG = "apiKey";
   private static final String PROMPT_ARG = "prompt";
+  private static final String PATH_ARG = "path";
+
+  private static final String PROMPTS_FOLDER_NAME = "prompts";
+  private static final int MAX_PROMPT_FILE_SIZE = 32768;
 
   private DialogCommand() {}
 
@@ -159,6 +172,32 @@ public class DialogCommand extends Command {
                                             EasyNPCArgument.getEntityWithAccess(
                                                 context, NPC_TARGET_ARG),
                                             StringArgumentType.getString(context, PROMPT_ARG))))))
+        .then(
+            Commands.literal("ai_prompt_file")
+                .then(
+                    Commands.argument(NPC_TARGET_ARG, EasyNPCArgument.npc())
+                        .then(
+                            Commands.argument(PATH_ARG, StringArgumentType.word())
+                                .executes(
+                                    context ->
+                                        setAIDialogPromptFile(
+                                            context.getSource(),
+                                            EasyNPCArgument.getEntityWithAccess(
+                                                context, NPC_TARGET_ARG),
+                                            StringArgumentType.getString(context, PATH_ARG))))))
+        .then(
+            Commands.literal("ai_persona_file")
+                .then(
+                    Commands.argument(NPC_TARGET_ARG, EasyNPCArgument.npc())
+                        .then(
+                            Commands.argument(PATH_ARG, StringArgumentType.word())
+                                .executes(
+                                    context ->
+                                        setAIDialogPersonaFile(
+                                            context.getSource(),
+                                            EasyNPCArgument.getEntityWithAccess(
+                                                context, NPC_TARGET_ARG),
+                                            StringArgumentType.getString(context, PATH_ARG))))))
         .then(
             Commands.literal("open")
                 .then(
@@ -366,6 +405,173 @@ public class DialogCommand extends Command {
         context,
         "► Set AI system prompt for " + easyNPC + " (" + prompt.length() + " chars)",
         ChatFormatting.GREEN);
+  }
+
+  public static int setAIDialogPromptFile(
+      CommandSourceStack context, EasyNPC<?> easyNPC, String relativePath) {
+    DialogDataCapable<?> dialogData = easyNPC.getEasyNPCDialogData();
+    if (dialogData == null) {
+      return sendFailureMessageNoDialogData(context, easyNPC);
+    }
+
+    String prompt = readPromptFile(context, relativePath);
+    if (prompt == null) {
+      return FAILURE;
+    }
+    if (prompt.isEmpty()) {
+      return sendFailureMessage(context, "Prompt file '" + relativePath + "' is empty!");
+    }
+
+    DialogDataSet dataSet = dialogData.getDialogDataSet();
+    if (dataSet == null || dataSet.getType() != DialogType.AI) {
+      return sendFailureMessage(
+          context, "Set AI dialog first: /easy_npc dialog set ai <npc> <serverUrl> ...");
+    }
+
+    dataSet.setAISystemPrompt(prompt);
+    dialogData.setDialogDataSet(dataSet);
+
+    return sendSuccessMessage(
+        context,
+        "► Set AI system prompt for "
+            + easyNPC
+            + " from file '"
+            + relativePath
+            + "' ("
+            + prompt.length()
+            + " chars)",
+        ChatFormatting.GREEN);
+  }
+
+  public static int setAIDialogPersonaFile(
+      CommandSourceStack context, EasyNPC<?> easyNPC, String relativePath) {
+    DialogDataCapable<?> dialogData = easyNPC.getEasyNPCDialogData();
+    if (dialogData == null) {
+      return sendFailureMessageNoDialogData(context, easyNPC);
+    }
+
+    String fileContent = readPromptFile(context, relativePath);
+    if (fileContent == null) {
+      return FAILURE;
+    }
+
+    JsonObject json;
+    try {
+      json = JsonParser.parseString(fileContent).getAsJsonObject();
+    } catch (JsonSyntaxException | IllegalStateException exception) {
+      return sendFailureMessage(
+          context,
+          "Persona file '" + relativePath + "' is not a valid JSON object: " + exception.getMessage());
+    }
+
+    DialogDataSet dataSet = dialogData.getDialogDataSet();
+    if (dataSet == null || dataSet.getType() != DialogType.AI) {
+      return sendFailureMessage(
+          context, "Set AI dialog first: /easy_npc dialog set ai <npc> <serverUrl> ...");
+    }
+
+    List<String> setFields = new ArrayList<>();
+    String value;
+    if ((value = getJsonString(json, "name")) != null) {
+      dataSet.setAIPersonaName(value);
+      setFields.add("name");
+    }
+    if ((value = getJsonString(json, "race")) != null) {
+      dataSet.setAIPersonaRace(value);
+      setFields.add("race");
+    }
+    if ((value = getJsonString(json, "class")) != null) {
+      dataSet.setAIPersonaClass(value);
+      setFields.add("class");
+    }
+    if ((value = getJsonString(json, "alignment")) != null) {
+      dataSet.setAIPersonaAlignment(value);
+      setFields.add("alignment");
+    }
+    if ((value = getJsonString(json, "personality")) != null) {
+      dataSet.setAIPersonaPersonality(value);
+      setFields.add("personality");
+    }
+    if ((value = getJsonString(json, "quirks")) != null) {
+      dataSet.setAIPersonaQuirks(value);
+      setFields.add("quirks");
+    }
+    if ((value = getJsonString(json, "backstory")) != null) {
+      dataSet.setAIPersonaBackstory(value);
+      setFields.add("backstory");
+    }
+    if ((value = getJsonString(json, "goals")) != null) {
+      dataSet.setAIPersonaGoals(value);
+      setFields.add("goals");
+    }
+    if ((value = getJsonString(json, "speech_style")) != null) {
+      dataSet.setAIPersonaSpeechStyle(value);
+      setFields.add("speech_style");
+    }
+
+    if (setFields.isEmpty()) {
+      return sendFailureMessage(
+          context, "Persona file '" + relativePath + "' contains no known persona fields!");
+    }
+
+    dialogData.setDialogDataSet(dataSet);
+
+    return sendSuccessMessage(
+        context,
+        "► Set AI persona for "
+            + easyNPC
+            + " from file '"
+            + relativePath
+            + "' | fields: "
+            + String.join(", ", setFields),
+        ChatFormatting.GREEN);
+  }
+
+  private static String readPromptFile(CommandSourceStack context, String relativePath) {
+    if (relativePath == null || relativePath.isEmpty()) {
+      sendFailureMessage(context, "Prompt file path must not be empty!");
+      return null;
+    }
+
+    Path promptsFolder =
+        Constants.WORLD_DIR.resolve(Constants.MOD_ID).resolve(PROMPTS_FOLDER_NAME).normalize();
+    Path filePath = promptsFolder.resolve(relativePath).normalize();
+    if (!filePath.startsWith(promptsFolder)) {
+      sendFailureMessage(
+          context,
+          "Invalid prompt file path '"
+              + relativePath
+              + "': path must stay within "
+              + promptsFolder);
+      return null;
+    }
+
+    if (!Files.isRegularFile(filePath)) {
+      sendFailureMessage(context, "Prompt file not found: " + filePath);
+      return null;
+    }
+
+    try {
+      if (Files.size(filePath) > MAX_PROMPT_FILE_SIZE) {
+        sendFailureMessage(
+            context,
+            "Prompt file "
+                + filePath
+                + " exceeds the maximum size of "
+                + MAX_PROMPT_FILE_SIZE
+                + " bytes!");
+        return null;
+      }
+      return Files.readString(filePath, StandardCharsets.UTF_8);
+    } catch (IOException exception) {
+      sendFailureMessage(
+          context, "Unable to read prompt file " + filePath + ": " + exception.getMessage());
+      return null;
+    }
+  }
+
+  private static String getJsonString(JsonObject json, String key) {
+    return json.has(key) && json.get(key).isJsonPrimitive() ? json.get(key).getAsString() : null;
   }
 
   public static int treeCreate(
