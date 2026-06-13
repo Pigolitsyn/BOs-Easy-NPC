@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc;
 
 import de.markusbordihn.easynpc.client.ClientEventHandler;
+import de.markusbordihn.easynpc.client.hud.QuestHudOverlay;
 import de.markusbordihn.easynpc.client.model.ModModelLayer;
 import de.markusbordihn.easynpc.client.renderer.BlockEntityRenderer;
 import de.markusbordihn.easynpc.client.renderer.EntityRenderer;
@@ -31,6 +32,8 @@ import de.markusbordihn.easynpc.network.NetworkMessageHandlerManager;
 import de.markusbordihn.easynpc.network.ServerNetworkMessageHandler;
 import de.markusbordihn.easynpc.tabs.ModTabs;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.minecraft.resources.Identifier;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -65,5 +68,9 @@ public class EasyNPCClient implements ClientModInitializer {
 
     log.info("{} Client Event Handler ...", Constants.LOG_REGISTER_PREFIX);
     ClientEventHandler.registerClientEvents();
+
+    log.info("{} Quest HUD Overlay ...", Constants.LOG_REGISTER_PREFIX);
+    HudElementRegistry.addLast(
+        Identifier.fromNamespaceAndPath(Constants.MOD_ID, "quest_hud"), new QuestHudOverlay());
   }
 }

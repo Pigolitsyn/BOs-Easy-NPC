@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc.network.message.client;
 
 import de.markusbordihn.easynpc.Constants;
+import de.markusbordihn.easynpc.client.hud.QuestHudState;
 import de.markusbordihn.easynpc.network.message.NetworkMessageRecord;
 import de.markusbordihn.easynpc.quest.QuestHudData;
 import net.minecraft.network.FriendlyByteBuf;
@@ -62,10 +63,10 @@ public record QuestHudDefinitionMessage(QuestHudData data) implements NetworkMes
 
   @Override
   public void handleClient() {
-    // Task 3 wires this into the client-side HUD overlay. Placeholder for now.
     log.debug(
         "[QuestHud] received definition '{}' with {} stage(s)",
         this.data.title(),
         this.data.stages().size());
+    QuestHudState.set(this.data);
   }
 }

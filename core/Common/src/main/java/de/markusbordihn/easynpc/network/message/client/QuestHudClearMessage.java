@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc.network.message.client;
 
 import de.markusbordihn.easynpc.Constants;
+import de.markusbordihn.easynpc.client.hud.QuestHudState;
 import de.markusbordihn.easynpc.network.message.NetworkMessageRecord;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.RegistryFriendlyByteBuf;
@@ -61,7 +62,7 @@ public record QuestHudClearMessage() implements NetworkMessageRecord {
 
   @Override
   public void handleClient() {
-    // Task 3 clears the client HUD overlay here. Placeholder for now.
     log.debug("[QuestHud] received clear");
+    QuestHudState.clear();
   }
 }
