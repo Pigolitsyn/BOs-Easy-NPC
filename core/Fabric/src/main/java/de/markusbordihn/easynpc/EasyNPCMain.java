@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc;
 
 import de.markusbordihn.easynpc.block.ModBlocks;
+import de.markusbordihn.easynpc.commands.LoreDimTestCommand;
 import de.markusbordihn.easynpc.commands.ModArgumentTypes;
 import de.markusbordihn.easynpc.commands.SpikeDimCommand;
 import de.markusbordihn.easynpc.commands.manager.CommandManager;
@@ -102,6 +103,11 @@ public class EasyNPCMain implements ModInitializer {
     CommandRegistrationCallback.EVENT.register(
         (dispatcher, commandBuildContext, commandSelection) ->
             SpikeDimCommand.register(dispatcher));
+
+    // J2: register /easy_npc lore-dim-test <data_path> (LoreChunkGenerator live test harness).
+    CommandRegistrationCallback.EVENT.register(
+        (dispatcher, commandBuildContext, commandSelection) ->
+            LoreDimTestCommand.register(dispatcher));
 
     log.info("{} Server Events ...", Constants.LOG_REGISTER_PREFIX);
     ServerLifecycleEvents.SERVER_STARTING.register(ServerEvents::handleServerStarting);
