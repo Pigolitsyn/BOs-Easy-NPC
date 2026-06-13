@@ -20,6 +20,8 @@ subprojects {
         includeGroup "curse.maven"
       }
     }
+    // SPIKE 0.2: Fantasy runtime dimension library (nucleoid)
+    maven { url "https://maven.nucleoid.xyz/" }
   }
 
   dependencies {

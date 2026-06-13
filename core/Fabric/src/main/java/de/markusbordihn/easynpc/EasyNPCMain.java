@@ -21,6 +21,7 @@ package de.markusbordihn.easynpc;
 
 import de.markusbordihn.easynpc.block.ModBlocks;
 import de.markusbordihn.easynpc.commands.ModArgumentTypes;
+import de.markusbordihn.easynpc.commands.SpikeDimCommand;
 import de.markusbordihn.easynpc.commands.manager.CommandManager;
 import de.markusbordihn.easynpc.compat.CompatHandler;
 import de.markusbordihn.easynpc.compat.CompatManager;
@@ -96,6 +97,11 @@ public class EasyNPCMain implements ModInitializer {
     CommandRegistrationCallback.EVENT.register(
         (dispatcher, commandBuildContext, commandSelection) ->
             CommandManager.registerCommands(dispatcher, commandBuildContext));
+
+    // SPIKE 0.2: register throwaway /spike_dim command (Fantasy persistent dimension).
+    CommandRegistrationCallback.EVENT.register(
+        (dispatcher, commandBuildContext, commandSelection) ->
+            SpikeDimCommand.register(dispatcher));
 
     log.info("{} Server Events ...", Constants.LOG_REGISTER_PREFIX);
     ServerLifecycleEvents.SERVER_STARTING.register(ServerEvents::handleServerStarting);

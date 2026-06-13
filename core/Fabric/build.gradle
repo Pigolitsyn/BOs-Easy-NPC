@@ -55,6 +55,10 @@ dependencies {
   // Include Common code
   implementation project(":Common")
 
+  // SPIKE 0.2: Fantasy runtime/persistent dimension library (Fabric-only)
+  modImplementation "xyz.nucleoid:fantasy:0.7.0+1.21.11"
+  include "xyz.nucleoid:fantasy:0.7.0+1.21.11"
+
   // Test dependencies
   testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.1'
   testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.1'
