@@ -79,6 +79,14 @@ public class LoreChunkGenerator extends ChunkGenerator {
     this.caveSeed = caves != null ? caves.seed : worldData.seed;
   }
 
+  /**
+   * World-data spawn point [x, y, z], or null when the plan has none. Used by
+   * `/lorecraft dim tp` to default the destination when no explicit coords are given.
+   */
+  public int[] spawn() {
+    return this.worldData != null ? this.worldData.spawn : null;
+  }
+
   private static BlockState blockFromId(String id, net.minecraft.world.level.block.Block fallback) {
     if (id == null) {
       return fallback.defaultBlockState();

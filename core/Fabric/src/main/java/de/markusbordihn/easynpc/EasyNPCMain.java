@@ -20,6 +20,7 @@
 package de.markusbordihn.easynpc;
 
 import de.markusbordihn.easynpc.block.ModBlocks;
+import de.markusbordihn.easynpc.commands.DimCommand;
 import de.markusbordihn.easynpc.commands.LoreDimTestCommand;
 import de.markusbordihn.easynpc.commands.ModArgumentTypes;
 import de.markusbordihn.easynpc.commands.SpikeDimCommand;
@@ -108,6 +109,10 @@ public class EasyNPCMain implements ModInitializer {
     CommandRegistrationCallback.EVENT.register(
         (dispatcher, commandBuildContext, commandSelection) ->
             LoreDimTestCommand.register(dispatcher));
+
+    // J4: register /lorecraft dim create|delete|tp (production dimension lifecycle commands).
+    CommandRegistrationCallback.EVENT.register(
+        (dispatcher, commandBuildContext, commandSelection) -> DimCommand.register(dispatcher));
 
     log.info("{} Server Events ...", Constants.LOG_REGISTER_PREFIX);
     ServerLifecycleEvents.SERVER_STARTING.register(ServerEvents::handleServerStarting);
