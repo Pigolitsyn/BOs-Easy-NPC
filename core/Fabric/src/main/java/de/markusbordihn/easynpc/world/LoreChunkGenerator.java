@@ -57,19 +57,11 @@ public class LoreChunkGenerator extends ChunkGenerator {
   // don't punch open the ground. Carve from (surface - this) downward.
   private static final int CAVE_SURFACE_MARGIN = 4;
 
-  // J4: invisible barrier wall around the quest-zone perimeter so the player can't walk off the
-  // island into the void. Border columns get a minecraft:barrier wall from h+1 up to
-  // (maxZoneHeight + BARRIER_HEIGHT) — tall enough to seal the gap even over edge-of-zone hills.
-  private static final int BARRIER_HEIGHT = 24;
-
   private final WorldData worldData;
   private final BlockState surface;
   private final BlockState subsurface;
   private final BlockState water;
   private final BlockState air;
-  private final BlockState barrier;
-  // Highest surface Y anywhere in the zone; cached so the perimeter wall tops out above every hill.
-  private final int maxZoneHeight;
   private final int seaLevel;
   private final boolean cavesEnabled;
   private final double caveDensity;
@@ -82,35 +74,11 @@ public class LoreChunkGenerator extends ChunkGenerator {
     this.subsurface = blockFromId(worldData.surfacePalette.subsurface, Blocks.DIRT);
     this.water = Blocks.WATER.defaultBlockState();
     this.air = Blocks.AIR.defaultBlockState();
-    this.barrier = Blocks.BARRIER.defaultBlockState();
-    this.maxZoneHeight = computeMaxZoneHeight(worldData);
     this.seaLevel = worldData.waterSeaLevel();
     WorldData.CavePlan caves = worldData.caves;
     this.cavesEnabled = caves != null && caves.enabled && caves.density > 0.0f;
     this.caveDensity = caves != null ? caves.density : 0.0;
     this.caveSeed = caves != null ? caves.seed : worldData.seed;
-  }
-
-  /** Highest surface Y across the whole heightmap; sea level when the map is empty/missing. */
-  private static int computeMaxZoneHeight(WorldData worldData) {
-    int max = worldData.waterSeaLevel();
-    if (worldData.heightmap != null) {
-      for (Integer hh : worldData.heightmap) {
-        if (hh != null && hh > max) {
-          max = hh;
-        }
-      }
-    }
-    return max;
-  }
-
-  /**
-   * True when world column (x, z) sits on the outermost ring of the quest grid (the zone edge).
-   * Border columns get the invisible barrier wall; interior columns do not. Callers must already
-   * have checked {@code inBounds} — this only tests the edge condition, not membership.
-   */
-  static boolean isBorderColumn(int worldX, int worldZ, int width, int depth) {
-    return worldX == 0 || worldX == width - 1 || worldZ == 0 || worldZ == depth - 1;
   }
 
   /**
@@ -191,16 +159,6 @@ public class LoreChunkGenerator extends ChunkGenerator {
             setBlock(chunk, lx, y, lz, this.water);
           }
           topPrimed = Math.min(this.seaLevel, h); // OCEAN_FLOOR tracks the solid floor at h.
-        }
-
-        // J4: invisible barrier wall on the zone perimeter. Fill minecraft:barrier from h+1 up to
-        // (maxZoneHeight + BARRIER_HEIGHT). The terrain already seals h and below, so this caps the
-        // column with an unbreakable, invisible wall the player can't walk/jump over into the void.
-        if (isBorderColumn(worldX, worldZ, this.worldData.width, this.worldData.depth)) {
-          int barrierTop = Math.min(this.maxZoneHeight + BARRIER_HEIGHT, chunkMaxY);
-          for (int y = Math.max(h + 1, chunkMinY); y <= barrierTop; y++) {
-            setBlock(chunk, lx, y, lz, this.barrier);
-          }
         }
 
         // Prime heightmaps: OCEAN_FLOOR_WG = solid surface (h); WORLD_SURFACE_WG = top of
