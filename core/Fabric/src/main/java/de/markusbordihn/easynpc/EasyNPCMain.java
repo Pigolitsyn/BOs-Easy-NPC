@@ -47,6 +47,7 @@ import de.markusbordihn.easynpc.server.ServerEvents;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -120,6 +121,16 @@ public class EasyNPCMain implements ModInitializer {
     ServerLifecycleEvents.SERVER_STOPPING.register(ServerEvents::handleServerStopping);
     ServerTickEvents.END_SERVER_TICK.register(ServerEvents::handleServerTick);
     LivingEntityEventHandler.registerServerEntityEvents();
+
+    // HUDSPIKE Task 0 (FACT 1, throwaway): prove dimension-entry event fires + signature.
+    // In this layered 1.21.11 mapping ResourceKey#identifier() (not location()) yields the dim id.
+    ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register(
+        (player, origin, destination) ->
+            log.info(
+                "[HUDSPIKE] player={} from={} to={}",
+                player.getScoreboardName(),
+                origin.dimension().identifier(),
+                destination.dimension().identifier()));
 
     log.info("{} Menu Handler ...", Constants.LOG_REGISTER_PREFIX);
     MenuManager.registerMenuHandler(new MenuHandler());
