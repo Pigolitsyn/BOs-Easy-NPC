@@ -51,11 +51,19 @@ public class LoreChunkGenerator extends ChunkGenerator {
   private static final int MIN_Y = -64;
   private static final int GEN_DEPTH = 384;
 
+  // J3: do not carve the top of the relief away — keep a solid cap below the surface so caves
+  // don't punch open the ground. Carve from (surface - this) downward.
+  private static final int CAVE_SURFACE_MARGIN = 4;
+
   private final WorldData worldData;
   private final BlockState surface;
   private final BlockState subsurface;
   private final BlockState water;
+  private final BlockState air;
   private final int seaLevel;
+  private final boolean cavesEnabled;
+  private final double caveDensity;
+  private final long caveSeed;
 
   public LoreChunkGenerator(WorldData worldData, HolderGetter<Biome> biomeLookup) {
     super(new LoreBiomeSource(worldData, biomeLookup));
@@ -63,7 +71,12 @@ public class LoreChunkGenerator extends ChunkGenerator {
     this.surface = blockFromId(worldData.surfacePalette.surface, Blocks.GRASS_BLOCK);
     this.subsurface = blockFromId(worldData.surfacePalette.subsurface, Blocks.DIRT);
     this.water = Blocks.WATER.defaultBlockState();
+    this.air = Blocks.AIR.defaultBlockState();
     this.seaLevel = worldData.waterSeaLevel();
+    WorldData.CavePlan caves = worldData.caves;
+    this.cavesEnabled = caves != null && caves.enabled && caves.density > 0.0f;
+    this.caveDensity = caves != null ? caves.density : 0.0;
+    this.caveSeed = caves != null ? caves.seed : worldData.seed;
   }
 
   private static BlockState blockFromId(String id, net.minecraft.world.level.block.Block fallback) {
@@ -109,8 +122,15 @@ public class LoreChunkGenerator extends ChunkGenerator {
 
         // Solid column: subsurface from bottom up to h-1, surface at h.
         int solidTop = Math.min(h, chunkMaxY);
+        // J3: caves carve air below the surface cap; never above (carveTop keeps the cap solid).
+        int carveTop = h - CAVE_SURFACE_MARGIN;
         for (int y = chunkMinY; y <= solidTop; y++) {
           BlockState state = (y == h) ? this.surface : this.subsurface;
+          if (this.cavesEnabled
+              && y <= carveTop
+              && CaveNoise.isCarved(worldX, y, worldZ, this.caveSeed, this.caveDensity)) {
+            state = this.air;
+          }
           setBlock(chunk, lx, y, lz, state);
         }
 
@@ -137,6 +157,10 @@ public class LoreChunkGenerator extends ChunkGenerator {
         }
       }
     }
+
+    // J3: bake structures (scenes/roads/trees from Rust) on top of the finished terrain.
+    // decor_slots are NOT baked here — the Python LLM pipeline fills them via setblock later.
+    StructureStamper.stampChunk(this.worldData, chunk);
 
     return CompletableFuture.completedFuture(chunk);
   }

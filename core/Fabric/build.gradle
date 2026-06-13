@@ -123,6 +123,8 @@ tasks.register('worldDataTest', Test) {
   testClassesDirs = sourceSets.test.output.classesDirs
   classpath = sourceSets.test.runtimeClasspath
   include '**/world/WorldDataTest.class'
+  include '**/world/CaveNoiseTest.class'
+  include '**/world/StructureStamperTest.class'
 }
 
 // CurseForge Publishing
