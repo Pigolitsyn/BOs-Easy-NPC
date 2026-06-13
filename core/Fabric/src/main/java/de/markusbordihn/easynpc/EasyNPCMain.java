@@ -23,6 +23,7 @@ import de.markusbordihn.easynpc.block.ModBlocks;
 import de.markusbordihn.easynpc.commands.DimCommand;
 import de.markusbordihn.easynpc.commands.LoreDimTestCommand;
 import de.markusbordihn.easynpc.commands.ModArgumentTypes;
+import de.markusbordihn.easynpc.commands.QuestCommand;
 import de.markusbordihn.easynpc.commands.SpikeDimCommand;
 import de.markusbordihn.easynpc.commands.manager.CommandManager;
 import de.markusbordihn.easynpc.compat.CompatHandler;
@@ -43,11 +44,11 @@ import de.markusbordihn.easynpc.network.NetworkHandlerManager;
 import de.markusbordihn.easynpc.network.NetworkHandlerManagerType;
 import de.markusbordihn.easynpc.network.NetworkMessageHandlerManager;
 import de.markusbordihn.easynpc.network.syncher.EntityDataSerializersManagerFabric;
+import de.markusbordihn.easynpc.quest.QuestHudServerHandler;
 import de.markusbordihn.easynpc.server.ServerEvents;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
-import net.fabricmc.fabric.api.entity.event.v1.ServerEntityWorldChangeEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
@@ -115,6 +116,10 @@ public class EasyNPCMain implements ModInitializer {
     CommandRegistrationCallback.EVENT.register(
         (dispatcher, commandBuildContext, commandSelection) -> DimCommand.register(dispatcher));
 
+    // Task 2: register /lorecraft quest load|unload (quest HUD registry commands).
+    CommandRegistrationCallback.EVENT.register(
+        (dispatcher, commandBuildContext, commandSelection) -> QuestCommand.register(dispatcher));
+
     log.info("{} Server Events ...", Constants.LOG_REGISTER_PREFIX);
     ServerLifecycleEvents.SERVER_STARTING.register(ServerEvents::handleServerStarting);
     ServerLifecycleEvents.SERVER_STARTED.register(ServerEvents::handleServerStarted);
@@ -122,15 +127,9 @@ public class EasyNPCMain implements ModInitializer {
     ServerTickEvents.END_SERVER_TICK.register(ServerEvents::handleServerTick);
     LivingEntityEventHandler.registerServerEntityEvents();
 
-    // HUDSPIKE Task 0 (FACT 1, throwaway): prove dimension-entry event fires + signature.
-    // In this layered 1.21.11 mapping ResourceKey#identifier() (not location()) yields the dim id.
-    ServerEntityWorldChangeEvents.AFTER_PLAYER_CHANGE_WORLD.register(
-        (player, origin, destination) ->
-            log.info(
-                "[HUDSPIKE] player={} from={} to={}",
-                player.getScoreboardName(),
-                origin.dimension().identifier(),
-                destination.dimension().identifier()));
+    // Task 2: quest HUD status push — dim-enter + login listeners and the 20-tick poll loop.
+    QuestHudServerHandler.register();
+    ServerTickEvents.END_SERVER_TICK.register(QuestHudServerHandler::onServerTick);
 
     log.info("{} Menu Handler ...", Constants.LOG_REGISTER_PREFIX);
     MenuManager.registerMenuHandler(new MenuHandler());

@@ -24,6 +24,8 @@ import de.markusbordihn.easynpc.network.message.NetworkMessageRecord;
 import de.markusbordihn.easynpc.network.message.client.LoadAIHistoryMessage;
 import de.markusbordihn.easynpc.network.message.client.OpenMenuCallbackMessage;
 import de.markusbordihn.easynpc.network.message.client.NPCSpeakMessage;
+import de.markusbordihn.easynpc.network.message.client.QuestHudClearMessage;
+import de.markusbordihn.easynpc.network.message.client.QuestHudDefinitionMessage;
 import de.markusbordihn.easynpc.network.message.client.ReceiveAIMessageMessage;
 import de.markusbordihn.easynpc.network.message.client.SyncDataMessage;
 import de.markusbordihn.easynpc.network.message.server.ExecuteActionEventMessage;
@@ -130,6 +132,18 @@ public class NetworkHandlerManager {
         LoadAIHistoryMessage.STREAM_CODEC,
         LoadAIHistoryMessage.class,
         LoadAIHistoryMessage::create);
+
+    networkHandler.registerClientNetworkMessage(
+        QuestHudDefinitionMessage.PAYLOAD_TYPE,
+        QuestHudDefinitionMessage.STREAM_CODEC,
+        QuestHudDefinitionMessage.class,
+        QuestHudDefinitionMessage::create);
+
+    networkHandler.registerClientNetworkMessage(
+        QuestHudClearMessage.PAYLOAD_TYPE,
+        QuestHudClearMessage.STREAM_CODEC,
+        QuestHudClearMessage.class,
+        QuestHudClearMessage::create);
   }
 
   public static void registerServerNetworkHandler() {
