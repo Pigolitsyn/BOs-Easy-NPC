@@ -87,11 +87,12 @@ class WorldDataTest {
   }
 
   @Test
-  void outOfBoundsFallsBackToSeaLevelAndNullBiome() {
+  void outOfBoundsIsVoidHeightAndNullBiome() {
     WorldData d = WorldDataLoader.fromJson(SAMPLE);
-    assertEquals(62, d.getHeight(-1, 0));
-    assertEquals(62, d.getHeight(0, 99));
-    assertEquals(62, d.getHeight(2, 2));
+    // Outside the grid is VOID (no terrain), signalled by VOID_HEIGHT — not a sea-level floor.
+    assertEquals(WorldData.VOID_HEIGHT, d.getHeight(-1, 0));
+    assertEquals(WorldData.VOID_HEIGHT, d.getHeight(0, 99));
+    assertEquals(WorldData.VOID_HEIGHT, d.getHeight(2, 2));
     assertNull(d.getBiome(-1, 0));
     assertNull(d.getBiome(2, 0));
   }

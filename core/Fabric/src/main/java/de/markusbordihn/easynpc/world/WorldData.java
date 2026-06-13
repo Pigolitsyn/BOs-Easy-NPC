@@ -107,15 +107,24 @@ public class WorldData {
   }
 
   /**
-   * Real surface Y for a world column. Returns {@code sea_level} for columns outside the grid
-   * (flat void floor at sea level) so the generator never indexes out of range.
+   * Real surface Y for a world column. Returns {@link #VOID_HEIGHT} for columns outside the grid:
+   * the quest area is an island in the void, so anything beyond [0,width)x[0,depth) has NO terrain
+   * (empty column). Callers MUST treat a return of {@code VOID_HEIGHT} as "no blocks in this column"
+   * — see LoreChunkGenerator. The sentinel sits below any reachable Y so it never primes terrain.
    */
   public int getHeight(int worldX, int worldZ) {
     if (!inBounds(worldX, worldZ)) {
-      return this.seaLevel;
+      return VOID_HEIGHT;
     }
     return this.heightmap.get(index(worldX, worldZ));
   }
+
+  /**
+   * Sentinel surface Y for columns outside the quest grid — below the overworld floor (-64) so it
+   * reads as "void / no terrain". {@link #getHeight} returns this out of bounds; the generator
+   * leaves such columns empty (air from minY up) instead of building a flat sea-level floor.
+   */
+  public static final int VOID_HEIGHT = Integer.MIN_VALUE;
 
   /** Biome id for a world column, or {@code null} when outside the grid. */
   public String getBiome(int worldX, int worldZ) {

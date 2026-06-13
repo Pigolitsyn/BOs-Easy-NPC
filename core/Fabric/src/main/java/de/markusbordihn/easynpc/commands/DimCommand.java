@@ -33,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.commands.arguments.EntityArgument;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.HolderGetter;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.Component;
@@ -47,6 +48,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.biome.Biome;
 import net.minecraft.world.level.dimension.BuiltinDimensionTypes;
 import net.minecraft.world.level.dimension.DimensionType;
+import net.minecraft.world.level.storage.LevelData;
 import xyz.nucleoid.fantasy.Fantasy;
 import xyz.nucleoid.fantasy.RuntimeWorldConfig;
 import xyz.nucleoid.fantasy.RuntimeWorldHandle;
@@ -146,6 +148,18 @@ public final class DimCommand {
       // Idempotent: re-opening an existing dim returns the same world (config ignored).
       RuntimeWorldHandle handle = fantasy.getOrOpenPersistentWorld(dimId(questId), config);
       HANDLES.put(questId, handle);
+
+      // Pin the dimension worldspawn onto the generated terrain (world-data spawn). Otherwise a
+      // direct entry / respawn drops the player at 0,0 which is now VOID outside the quest grid.
+      int[] spawn = generator.spawn();
+      if (spawn != null) {
+        ServerLevel level = handle.asWorld();
+        if (level != null) {
+          BlockPos spawnPos = new BlockPos(spawn[0], spawn[1], spawn[2]);
+          // 1.21.11: worldspawn is carried by LevelData.RespawnData (yaw/pitch 0).
+          level.setRespawnData(LevelData.RespawnData.of(dimKey(questId), spawnPos, 0.0f, 0.0f));
+        }
+      }
 
       String dimIdStr = handle.getRegistryKey().identifier().toString();
       source.sendSuccess(() -> Component.literal("created " + dimIdStr), false);

@@ -7,7 +7,9 @@
  * Coordinate contract (see WorldData / src/world_data.rs):
  *   - heightmap[z*width+x] = REAL world Y of the surface for world column (x, z).
  *   - grid origin = world (0,0); grid spans world [0,width) x [0,depth).
- *   - columns outside the grid -> flat void at sea level, biome = default plains.
+ *   - columns OUTSIDE the grid -> true void: NO blocks placed (air from minY up), biome = default
+ *     plains. The quest area is an island floating in the void; the surrounding world is empty so
+ *     players can't walk off the terrain into a fake sea-level floor.
  * Column fill (top-down):
  *   y == h            -> surface_palette.surface
  *   minY <= y < h     -> surface_palette.subsurface
@@ -126,6 +128,13 @@ public class LoreChunkGenerator extends ChunkGenerator {
       for (int lz = 0; lz < 16; lz++) {
         int worldX = baseX + lx;
         int worldZ = baseZ + lz;
+
+        // Void outside the quest grid: leave the whole column as air (no blocks, no water,
+        // heightmaps stay at the bottom) so there is no walkable floor beyond the terrain.
+        if (!this.worldData.inBounds(worldX, worldZ)) {
+          continue;
+        }
+
         int h = this.worldData.getHeight(worldX, worldZ);
 
         // Solid column: subsurface from bottom up to h-1, surface at h.
@@ -230,6 +239,10 @@ public class LoreChunkGenerator extends ChunkGenerator {
       Heightmap.Types type,
       LevelHeightAccessor level,
       RandomState randomState) {
+    // Void outside the grid: no terrain -> first free Y is the world floor.
+    if (!this.worldData.inBounds(x, z)) {
+      return level.getMinY();
+    }
     int h = this.worldData.getHeight(x, z);
     // OCEAN_FLOOR family wants the solid floor; surface/motion-blocking want the water top.
     boolean wantsFluid =
@@ -247,6 +260,11 @@ public class LoreChunkGenerator extends ChunkGenerator {
     int minY = level.getMinY();
     BlockState[] column = new BlockState[height];
     BlockState air = Blocks.AIR.defaultBlockState();
+    // Void outside the grid: an all-air column (no terrain, no water).
+    if (!this.worldData.inBounds(x, z)) {
+      java.util.Arrays.fill(column, air);
+      return new NoiseColumn(minY, column);
+    }
     int h = this.worldData.getHeight(x, z);
     for (int i = 0; i < height; i++) {
       int y = minY + i;
