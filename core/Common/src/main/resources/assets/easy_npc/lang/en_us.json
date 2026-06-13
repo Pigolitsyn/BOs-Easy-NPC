@@ -144,5 +144,6 @@
   "tooltip.easy_npc.spawner.boss_spawner": "The Boss Spawner is a special spawner that allows you to spawn a boss NPC.",
   "tooltip.easy_npc.spawner.default_spawner": "The Default Spawner is a spawner that allows you to spawn a default NPC.",
   "tooltip.easy_npc.spawner.group_spawner": "The Group Spawner is a spawner that allows you to spawn a group of NPCs.",
-  "tooltip.easy_npc.spawner.single_spawner": "The Single Spawner is a spawner that allows you to spawn a single NPC."
+  "tooltip.easy_npc.spawner.single_spawner": "The Single Spawner is a spawner that allows you to spawn a single NPC.",
+  "key.easy_npc.quest_hud_toggle": "Toggle Quest HUD"
 }

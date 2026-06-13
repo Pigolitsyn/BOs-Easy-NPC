@@ -30,10 +30,16 @@ import de.markusbordihn.easynpc.network.NetworkHandlerManager;
 import de.markusbordihn.easynpc.network.NetworkHandlerManagerType;
 import de.markusbordihn.easynpc.network.NetworkMessageHandlerManager;
 import de.markusbordihn.easynpc.network.ServerNetworkMessageHandler;
+import de.markusbordihn.easynpc.client.hud.QuestHudState;
 import de.markusbordihn.easynpc.tabs.ModTabs;
+import com.mojang.blaze3d.platform.InputConstants;
 import net.fabricmc.api.ClientModInitializer;
+import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
+import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
+import org.lwjgl.glfw.GLFW;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -72,5 +78,25 @@ public class EasyNPCClient implements ClientModInitializer {
     log.info("{} Quest HUD Overlay ...", Constants.LOG_REGISTER_PREFIX);
     HudElementRegistry.addLast(
         Identifier.fromNamespaceAndPath(Constants.MOD_ID, "quest_hud"), new QuestHudOverlay());
+
+    log.info("{} Quest HUD Toggle Keybind ...", Constants.LOG_REGISTER_PREFIX);
+    registerQuestHudToggle();
+  }
+
+  /** US3: bind [J] (default, MISC category) to collapse/expand the quest HUD panel. */
+  private static void registerQuestHudToggle() {
+    KeyMapping toggle =
+        KeyBindingHelper.registerKeyBinding(
+            new KeyMapping(
+                "key.easy_npc.quest_hud_toggle",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_J,
+                KeyMapping.Category.MISC));
+    ClientTickEvents.END_CLIENT_TICK.register(
+        client -> {
+          while (toggle.consumeClick()) {
+            QuestHudState.toggleCollapsed();
+          }
+        });
   }
 }

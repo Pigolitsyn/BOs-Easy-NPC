@@ -29,11 +29,15 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.resources.sounds.SimpleSoundInstance;
+import net.minecraft.sounds.SoundEvents;
 
 /**
- * Top-left quest stage panel (US1). Reads the active {@link QuestHudData} from {@link QuestHudState}
- * — its per-stage {@code done} flags come from the server packet, never the client scoreboard (spike
- * hud-0). Styled after {@code AIChatDialogScreen}: dark translucent fill + gold border.
+ * Top-left quest stage panel (US1) plus stage toasts (US2), completion banner (US4) and collapse
+ * toggle (US3). Reads the active {@link QuestHudData} from {@link QuestHudState} — per-stage {@code
+ * done} flags come from the server packet, never the client scoreboard (spike hud-0). Toast/finale
+ * events are raised in {@link QuestHudState#set} and drained here once for render + sound. Styled
+ * after {@code AIChatDialogScreen}: dark translucent fill + gold border.
  */
 public class QuestHudOverlay implements HudElement {
 
@@ -63,9 +67,39 @@ public class QuestHudOverlay implements HudElement {
   private static final String ARROW_BEHIND = "▼";
   private static final String ARROW_LEFT = "◀";
 
+  // US2 stage toast: top-center transient banner.
+  private static final long TOAST_MS = 3000L;
+  private static final int TOAST_BG = 0xCC1A1422;
+  private static final int TOAST_BORDER = 0xFF55FF55; // green frame for "stage done"
+  private static final int TOAST_TEXT = 0xFF55FF55;
+
+  // US4 completion banner: center-screen victory.
+  private static final long FINALE_MS = 5000L;
+  private static final int FINALE_BG = 0xDD1A1422;
+  private static final int FINALE_BORDER = 0xFFFFD700; // gold frame
+  private static final int FINALE_TEXT = 0xFFFFD700;
+  private static final String FINALE_LABEL = "★ Квест пройден ★";
+
+  // Active toast (US2): title + the client time (ms) when it should disappear.
+  private String toastTitle;
+  private long toastUntilMs;
+
+  // Active finale (US4): client time (ms) when the banner should disappear (0 = inactive).
+  private long finaleUntilMs;
+
   @Override
   public void render(final GuiGraphics guiGraphics, final DeltaTracker deltaTracker) {
-    // US7: nothing active -> draw nothing.
+    long now = nowMs();
+
+    // Drain one-shot events raised on the network thread; play sound exactly once on pickup.
+    drainEvents(now);
+
+    // Transient overlays draw regardless of whether a panel is shown (e.g. finale at 100%).
+    Font font = Minecraft.getInstance().font;
+    renderToast(guiGraphics, font, now);
+    renderFinale(guiGraphics, font, now);
+
+    // US7: nothing active -> draw no panel.
     if (QuestHudState.isEmpty()) {
       return;
     }
@@ -83,13 +117,30 @@ public class QuestHudOverlay implements HudElement {
     Status[] statuses = QuestHudStatus.stageStatuses(done);
     int pct = QuestHudStatus.percent(done);
 
-    Font font = Minecraft.getInstance().font;
+    if (QuestHudState.isCollapsed()) {
+      renderCollapsed(guiGraphics, font, stages, statuses, pct);
+    } else {
+      renderPanel(guiGraphics, font, data, stages, statuses, pct);
+    }
+
+    // Task 4: directional locator to the CURRENT objective (top-center).
+    renderLocator(guiGraphics, font, stages, statuses);
+  }
+
+  /** Full stage list panel (US1, expanded view). */
+  private static void renderPanel(
+      final GuiGraphics guiGraphics,
+      final Font font,
+      final QuestHudData data,
+      final List<StageInfo> stages,
+      final Status[] statuses,
+      final int pct) {
     String header = data.title() + "  " + pct + "%";
 
-    // Measure panel width.
     int contentWidth = font.width(header);
     for (StageInfo stage : stages) {
-      contentWidth = Math.max(contentWidth, font.width(iconFor(Status.CURRENT) + " " + stage.title()));
+      contentWidth =
+          Math.max(contentWidth, font.width(iconFor(Status.CURRENT) + " " + stage.title()));
     }
     int panelWidth = Math.max(MIN_WIDTH, contentWidth + 2 * PADDING);
     int rows = 1 + stages.size();
@@ -97,35 +148,138 @@ public class QuestHudOverlay implements HudElement {
 
     int left = MARGIN_X;
     int top = MARGIN_Y;
-    int right = left + panelWidth;
-    int bottom = top + panelHeight;
-
-    // Dark translucent background.
-    guiGraphics.fill(left, top, right, bottom, COLOR_BG);
-
-    // Gold border (1px frame).
-    guiGraphics.fill(left, top, right, top + 1, COLOR_BORDER); // top
-    guiGraphics.fill(left, bottom - 1, right, bottom, COLOR_BORDER); // bottom
-    guiGraphics.fill(left, top, left + 1, bottom, COLOR_BORDER); // left
-    guiGraphics.fill(right - 1, top, right, bottom, COLOR_BORDER); // right
+    drawFramedBox(guiGraphics, left, top, left + panelWidth, top + panelHeight);
 
     int textX = left + PADDING;
     int textY = top + PADDING;
 
-    // Header: title + percent.
     guiGraphics.drawString(font, header, textX, textY, COLOR_TITLE, true);
     textY += LINE_HEIGHT;
 
-    // Stage lines.
     for (int i = 0; i < stages.size(); i++) {
       Status status = statuses[i];
       String line = iconFor(status) + " " + stages.get(i).title();
       guiGraphics.drawString(font, line, textX, textY, colorFor(status), true);
       textY += LINE_HEIGHT;
     }
+  }
 
-    // Task 4: directional locator to the CURRENT objective (top-center).
-    renderLocator(guiGraphics, font, stages, statuses);
+  /** US3: single-line collapsed view — current objective + percent only. */
+  private static void renderCollapsed(
+      final GuiGraphics guiGraphics,
+      final Font font,
+      final List<StageInfo> stages,
+      final Status[] statuses,
+      final int pct) {
+    StageInfo current = firstCurrent(stages, statuses);
+    String line;
+    int color;
+    if (current != null) {
+      line = ICON_CURRENT + " " + current.title() + "  " + pct + "%";
+      color = COLOR_CURRENT;
+    } else {
+      // Everything done -> show completion in the collapsed line.
+      line = ICON_DONE + "  " + pct + "%";
+      color = COLOR_DONE;
+    }
+
+    int panelWidth = Math.max(MIN_WIDTH, font.width(line) + 2 * PADDING);
+    int panelHeight = 2 * PADDING + LINE_HEIGHT;
+    int left = MARGIN_X;
+    int top = MARGIN_Y;
+    drawFramedBox(guiGraphics, left, top, left + panelWidth, top + panelHeight);
+    guiGraphics.drawString(font, line, left + PADDING, top + PADDING, color, true);
+  }
+
+  // ---- US2 / US4: event draining + sound (once per event) ----
+
+  private void drainEvents(final long now) {
+    Minecraft minecraft = Minecraft.getInstance();
+
+    // Only pick up a new toast once the previous one has expired (avoids overlap).
+    if (now >= toastUntilMs) {
+      String next = QuestHudState.pollToast();
+      if (next != null) {
+        toastTitle = next;
+        toastUntilMs = now + TOAST_MS;
+        minecraft
+            .getSoundManager()
+            .play(SimpleSoundInstance.forUI(SoundEvents.UI_BUTTON_CLICK, 1.0f));
+      }
+    }
+
+    if (QuestHudState.consumeFinaleEvent()) {
+      finaleUntilMs = now + FINALE_MS;
+      minecraft
+          .getSoundManager()
+          .play(SimpleSoundInstance.forUI(SoundEvents.UI_TOAST_CHALLENGE_COMPLETE, 1.0f));
+    }
+  }
+
+  /** US2: top-center "✔ Этап пройден: <title>" banner for ~3 s. */
+  private void renderToast(final GuiGraphics guiGraphics, final Font font, final long now) {
+    if (toastTitle == null || now >= toastUntilMs) {
+      return;
+    }
+    String label = ICON_DONE + " Этап пройден: " + toastTitle;
+    int screenWidth = guiGraphics.guiWidth();
+    int textWidth = font.width(label);
+    int boxWidth = textWidth + 2 * PADDING;
+    int left = (screenWidth - boxWidth) / 2;
+    int top = 18;
+    int boxHeight = LINE_HEIGHT + 2 * PADDING;
+    drawFramedBox(guiGraphics, left, top, left + boxWidth, top + boxHeight, TOAST_BG, TOAST_BORDER);
+    guiGraphics.drawString(font, label, left + PADDING, top + PADDING, TOAST_TEXT, true);
+  }
+
+  /** US4: center-screen "★ Квест пройден ★" victory banner for ~5 s. */
+  private void renderFinale(final GuiGraphics guiGraphics, final Font font, final long now) {
+    if (finaleUntilMs == 0L || now >= finaleUntilMs) {
+      return;
+    }
+    int screenWidth = guiGraphics.guiWidth();
+    int screenHeight = guiGraphics.guiHeight();
+    int textWidth = font.width(FINALE_LABEL);
+    int boxWidth = textWidth + 4 * PADDING;
+    int boxHeight = LINE_HEIGHT + 4 * PADDING;
+    int left = (screenWidth - boxWidth) / 2;
+    int top = (screenHeight - boxHeight) / 2 - 20;
+    drawFramedBox(
+        guiGraphics, left, top, left + boxWidth, top + boxHeight, FINALE_BG, FINALE_BORDER);
+    guiGraphics.drawString(
+        font, FINALE_LABEL, left + 2 * PADDING, top + 2 * PADDING, FINALE_TEXT, true);
+  }
+
+  // ---- shared drawing ----
+
+  private static void drawFramedBox(
+      final GuiGraphics guiGraphics, final int left, final int top, final int right,
+      final int bottom) {
+    drawFramedBox(guiGraphics, left, top, right, bottom, COLOR_BG, COLOR_BORDER);
+  }
+
+  private static void drawFramedBox(
+      final GuiGraphics guiGraphics, final int left, final int top, final int right,
+      final int bottom, final int bg, final int border) {
+    guiGraphics.fill(left, top, right, bottom, bg);
+    guiGraphics.fill(left, top, right, top + 1, border); // top
+    guiGraphics.fill(left, bottom - 1, right, bottom, border); // bottom
+    guiGraphics.fill(left, top, left + 1, bottom, border); // left
+    guiGraphics.fill(right - 1, top, right, bottom, border); // right
+  }
+
+  private static StageInfo firstCurrent(final List<StageInfo> stages, final Status[] statuses) {
+    for (int i = 0; i < stages.size(); i++) {
+      if (statuses[i] == Status.CURRENT) {
+        return stages.get(i);
+      }
+    }
+    return null;
+  }
+
+  /** Wall-clock millis (toast/banner timers are independent of game pause). */
+  private static long nowMs() {
+    return System.currentTimeMillis();
   }
 
   /**
@@ -138,14 +292,7 @@ public class QuestHudOverlay implements HudElement {
       final Font font,
       final List<StageInfo> stages,
       final Status[] statuses) {
-    // Find the CURRENT stage (the single in-progress objective).
-    StageInfo current = null;
-    for (int i = 0; i < stages.size(); i++) {
-      if (statuses[i] == Status.CURRENT) {
-        current = stages.get(i);
-        break;
-      }
-    }
+    StageInfo current = firstCurrent(stages, statuses);
     if (current == null) {
       return; // everything done (or empty) -> no locator.
     }
