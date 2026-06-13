@@ -56,6 +56,13 @@ public class QuestHudOverlay implements HudElement {
   private static final String ICON_CURRENT = "▶"; // right-pointing triangle
   private static final String ICON_LOCKED = "🔒"; // lock (falls back to a glyph if absent)
 
+  // Locator (Task 4): directional arrow + distance to the CURRENT objective.
+  private static final int LOCATOR_TOP = 4; // y of the arrow row
+  private static final String ARROW_AHEAD = "▲";
+  private static final String ARROW_RIGHT = "▶";
+  private static final String ARROW_BEHIND = "▼";
+  private static final String ARROW_LEFT = "◀";
+
   @Override
   public void render(final GuiGraphics guiGraphics, final DeltaTracker deltaTracker) {
     // US7: nothing active -> draw nothing.
@@ -116,6 +123,68 @@ public class QuestHudOverlay implements HudElement {
       guiGraphics.drawString(font, line, textX, textY, colorFor(status), true);
       textY += LINE_HEIGHT;
     }
+
+    // Task 4: directional locator to the CURRENT objective (top-center).
+    renderLocator(guiGraphics, font, stages, statuses);
+  }
+
+  /**
+   * Draw a top-center directional arrow + "&lt;title&gt; · &lt;dist&gt; m" pointing at the CURRENT
+   * stage's NPC. Drawn nothing when there is no current stage (quest complete/empty) or the player
+   * is unavailable. Pure direction/distance math lives in {@link Locator} (unit-tested).
+   */
+  private static void renderLocator(
+      final GuiGraphics guiGraphics,
+      final Font font,
+      final List<StageInfo> stages,
+      final Status[] statuses) {
+    // Find the CURRENT stage (the single in-progress objective).
+    StageInfo current = null;
+    for (int i = 0; i < stages.size(); i++) {
+      if (statuses[i] == Status.CURRENT) {
+        current = stages.get(i);
+        break;
+      }
+    }
+    if (current == null) {
+      return; // everything done (or empty) -> no locator.
+    }
+
+    var player = Minecraft.getInstance().player;
+    if (player == null) {
+      return;
+    }
+
+    double px = player.getX();
+    double pz = player.getZ();
+    float yaw = player.getYRot();
+    double tx = current.npcX();
+    double tz = current.npcZ();
+
+    double bearing = Locator.bearing(px, pz, yaw, tx, tz);
+    int dist = Locator.distance(px, pz, tx, tz);
+
+    String arrow = arrowFor(bearing);
+    String label = arrow + " " + current.title() + " · " + dist + " m";
+
+    int screenWidth = guiGraphics.guiWidth();
+    int x = (screenWidth - font.width(label)) / 2;
+    guiGraphics.drawString(font, label, x, LOCATOR_TOP, COLOR_TITLE, true);
+  }
+
+  /**
+   * Pick a directional glyph from the bearing (degrees, [-180,180]; 0 = ahead, + = right, - =
+   * left): ahead |b|&lt;45, right 45..135, behind |b|&gt;135, left -135..-45.
+   */
+  private static String arrowFor(final double bearing) {
+    double abs = Math.abs(bearing);
+    if (abs < 45.0) {
+      return ARROW_AHEAD;
+    }
+    if (abs > 135.0) {
+      return ARROW_BEHIND;
+    }
+    return bearing > 0 ? ARROW_RIGHT : ARROW_LEFT;
   }
 
   private static String iconFor(final Status status) {
