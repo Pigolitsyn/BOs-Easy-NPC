@@ -60,7 +60,8 @@ public class AIDialogHandler {
       "system-reminder: Reply with valid JSON following the dialog protocol schema: "
           + "{\"say\": string, \"options\": [{\"id\": string, \"label\": string}], "
           + "\"question_asked\": boolean, \"answer_verdict\": \"correct\"|\"wrong\"|null, "
-          + "\"stage_complete_claim\": boolean}. No other text.";
+          + "\"stage_complete_claim\": boolean, \"command\": string|null}. "
+          + "Only set \"command\" when the player accepts a game; otherwise null. No other text.";
 
   private AIDialogHandler() {}
 
@@ -289,6 +290,7 @@ public class AIDialogHandler {
       // Model sees its own protocol: keep the raw JSON in the conversation history.
       appendAssistantHistory(history, content);
       applyQuestRail(key, npcId, serverPlayer, reply, questObjective, requiredCorrect);
+      runWhitelistedCommand(serverPlayer, npcId, reply.command());
 
       String say = reply.say() == null || reply.say().isBlank() ? content : reply.say();
       sendReply(serverPlayer, npcId, say, reply.options());
@@ -384,6 +386,26 @@ public class AIDialogHandler {
         "[AI] Quest complete: set scoreboard objective '{}' to 1 for player {}",
         objectiveName,
         serverPlayer.getName().getString());
+  }
+
+  private static void runWhitelistedCommand(
+      ServerPlayer serverPlayer, UUID npcId, String command) {
+    if (command == null || command.isBlank()) {
+      return;
+    }
+    var server = serverPlayer.level().getServer();
+    Runnable run =
+        () -> {
+          boolean ran = WhitelistedCommandExecutor.runForPlayer(serverPlayer, command);
+          if (!ran) {
+            log.warn("[AI] NPC command not executed (not allowlisted) npc={} cmd={}", npcId, command);
+          }
+        };
+    if (server != null) {
+      server.execute(run);
+    } else {
+      run.run();
+    }
   }
 
   static class QuestRail {
