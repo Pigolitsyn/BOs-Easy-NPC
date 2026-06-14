@@ -22,6 +22,7 @@ package de.markusbordihn.easynpc;
 import de.markusbordihn.easynpc.block.ModBlocks;
 import de.markusbordihn.easynpc.commands.DimCommand;
 import de.markusbordihn.easynpc.commands.LoreDimTestCommand;
+import de.markusbordihn.easynpc.commands.MapCommand;
 import de.markusbordihn.easynpc.commands.ModArgumentTypes;
 import de.markusbordihn.easynpc.commands.QuestCommand;
 import de.markusbordihn.easynpc.commands.SpikeDimCommand;
@@ -44,6 +45,7 @@ import de.markusbordihn.easynpc.network.NetworkHandlerManager;
 import de.markusbordihn.easynpc.network.NetworkHandlerManagerType;
 import de.markusbordihn.easynpc.network.NetworkMessageHandlerManager;
 import de.markusbordihn.easynpc.network.syncher.EntityDataSerializersManagerFabric;
+import de.markusbordihn.easynpc.quest.MapServerHandler;
 import de.markusbordihn.easynpc.quest.QuestHudServerHandler;
 import de.markusbordihn.easynpc.server.ServerEvents;
 import net.fabricmc.api.EnvType;
@@ -120,6 +122,10 @@ public class EasyNPCMain implements ModInitializer {
     CommandRegistrationCallback.EVENT.register(
         (dispatcher, commandBuildContext, commandSelection) -> QuestCommand.register(dispatcher));
 
+    // MOD-6: register /lorecraft map load|unload (mod-rendered map registry commands).
+    CommandRegistrationCallback.EVENT.register(
+        (dispatcher, commandBuildContext, commandSelection) -> MapCommand.register(dispatcher));
+
     log.info("{} Server Events ...", Constants.LOG_REGISTER_PREFIX);
     ServerLifecycleEvents.SERVER_STARTING.register(ServerEvents::handleServerStarting);
     ServerLifecycleEvents.SERVER_STARTED.register(ServerEvents::handleServerStarted);
@@ -130,6 +136,9 @@ public class EasyNPCMain implements ModInitializer {
     // Task 2: quest HUD status push — dim-enter + login listeners and the 20-tick poll loop.
     QuestHudServerHandler.register();
     ServerTickEvents.END_SERVER_TICK.register(QuestHudServerHandler::onServerTick);
+
+    // MOD-6: mod-rendered map push — dim-enter + login listeners (static data, no poll loop).
+    MapServerHandler.register();
 
     log.info("{} Menu Handler ...", Constants.LOG_REGISTER_PREFIX);
     MenuManager.registerMenuHandler(new MenuHandler());

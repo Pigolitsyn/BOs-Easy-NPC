@@ -22,6 +22,8 @@ package de.markusbordihn.easynpc.network;
 import de.markusbordihn.easynpc.Constants;
 import de.markusbordihn.easynpc.network.message.NetworkMessageRecord;
 import de.markusbordihn.easynpc.network.message.client.LoadAIHistoryMessage;
+import de.markusbordihn.easynpc.network.message.client.MapClearMessage;
+import de.markusbordihn.easynpc.network.message.client.MapDefinitionMessage;
 import de.markusbordihn.easynpc.network.message.client.OpenMenuCallbackMessage;
 import de.markusbordihn.easynpc.network.message.client.NPCSpeakMessage;
 import de.markusbordihn.easynpc.network.message.client.QuestHudClearMessage;
@@ -144,6 +146,18 @@ public class NetworkHandlerManager {
         QuestHudClearMessage.STREAM_CODEC,
         QuestHudClearMessage.class,
         QuestHudClearMessage::create);
+
+    networkHandler.registerClientNetworkMessage(
+        MapDefinitionMessage.PAYLOAD_TYPE,
+        MapDefinitionMessage.STREAM_CODEC,
+        MapDefinitionMessage.class,
+        MapDefinitionMessage::create);
+
+    networkHandler.registerClientNetworkMessage(
+        MapClearMessage.PAYLOAD_TYPE,
+        MapClearMessage.STREAM_CODEC,
+        MapClearMessage.class,
+        MapClearMessage::create);
   }
 
   public static void registerServerNetworkHandler() {

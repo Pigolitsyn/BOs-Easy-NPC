@@ -21,6 +21,8 @@ package de.markusbordihn.easynpc;
 
 import de.markusbordihn.easynpc.client.ClientEventHandler;
 import de.markusbordihn.easynpc.client.hud.QuestHudOverlay;
+import de.markusbordihn.easynpc.client.map.MapScreen;
+import de.markusbordihn.easynpc.client.map.MapState;
 import de.markusbordihn.easynpc.client.model.ModModelLayer;
 import de.markusbordihn.easynpc.client.renderer.BlockEntityRenderer;
 import de.markusbordihn.easynpc.client.renderer.EntityRenderer;
@@ -38,6 +40,7 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.KeyMapping;
+import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import org.lwjgl.glfw.GLFW;
 import org.apache.logging.log4j.LogManager;
@@ -81,6 +84,30 @@ public class EasyNPCClient implements ClientModInitializer {
 
     log.info("{} Quest HUD Toggle Keybind ...", Constants.LOG_REGISTER_PREFIX);
     registerQuestHudToggle();
+
+    log.info("{} Map Screen Keybind ...", Constants.LOG_REGISTER_PREFIX);
+    registerMapToggle();
+  }
+
+  /** MOD-6: bind [M] (default, MISC category) to open the mod-rendered map when one is available. */
+  private static void registerMapToggle() {
+    KeyMapping open =
+        KeyBindingHelper.registerKeyBinding(
+            new KeyMapping(
+                "key.easy_npc.map_open",
+                InputConstants.Type.KEYSYM,
+                GLFW.GLFW_KEY_M,
+                KeyMapping.Category.MISC));
+    ClientTickEvents.END_CLIENT_TICK.register(
+        client -> {
+          while (open.consumeClick()) {
+            Minecraft minecraft = Minecraft.getInstance();
+            // Only open from in-world (no other screen up) and only when a map is available.
+            if (minecraft.screen == null && !MapState.isEmpty()) {
+              minecraft.setScreen(new MapScreen());
+            }
+          }
+        });
   }
 
   /** US3: bind [J] (default, MISC category) to collapse/expand the quest HUD panel. */
