@@ -123,4 +123,36 @@ class AIProtocolTest {
     assertFalse(reply.parsed());
     assertTrue(reply.options().isEmpty());
   }
+
+  @Test
+  void parseExtractsCommandField() {
+    String raw =
+        "{\"say\": \"Let's go!\", \"command\": \"worldborder center 100 200\","
+            + " \"options\": [{\"id\": \"yes\", \"label\": \"Да\"}]}";
+    AIProtocol.Reply reply = AIProtocol.parse(raw);
+    assertTrue(reply.parsed());
+    assertEquals("worldborder center 100 200", reply.command());
+    assertEquals("Да", reply.options().get(0).label());
+  }
+
+  @Test
+  void parseCommandDefaultsToNullWhenAbsent() {
+    AIProtocol.Reply reply = AIProtocol.parse("{\"say\": \"Hi\"}");
+    assertTrue(reply.parsed());
+    assertNull(reply.command());
+  }
+
+  @Test
+  void parseCommandNullSafe() {
+    AIProtocol.Reply reply = AIProtocol.parse("{\"say\": \"Hi\", \"command\": null}");
+    assertTrue(reply.parsed());
+    assertNull(reply.command());
+  }
+
+  @Test
+  void parseUnparsedReplyHasNullCommand() {
+    AIProtocol.Reply reply = AIProtocol.parse("plain text, not json");
+    assertFalse(reply.parsed());
+    assertNull(reply.command());
+  }
 }

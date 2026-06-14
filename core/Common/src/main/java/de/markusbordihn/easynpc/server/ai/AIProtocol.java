@@ -40,13 +40,14 @@ public final class AIProtocol {
       boolean questionAsked,
       String answerVerdict,
       boolean stageCompleteClaim,
+      String command,
       boolean parsed) {}
 
   public record Option(String id, String label) {}
 
   public static Reply parse(String raw) {
     if (raw == null) {
-      return new Reply("", List.of(), false, null, false, false);
+      return new Reply("", List.of(), false, null, false, null, false);
     }
     String s = raw.strip();
     if (s.startsWith("```")) {
@@ -71,9 +72,10 @@ public final class AIProtocol {
           optBool(o, "question_asked"),
           optString(o, "answer_verdict"),
           optBool(o, "stage_complete_claim"),
+          optString(o, "command"),
           true);
     } catch (Exception e) {
-      return new Reply(raw, List.of(), false, null, false, false);
+      return new Reply(raw, List.of(), false, null, false, null, false);
     }
   }
 
